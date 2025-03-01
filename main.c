@@ -560,8 +560,20 @@ int main(int argc, char *argv[])
             settings.backgroundColor,
         };
 
-        SDL_Surface *surface = TTF_RenderText_Solid(font, "MinUI config", color);
-        SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+     // Display light name
+     char light_name_text[256];
+     snprintf(light_name_text, sizeof(light_name_text), "%s", "MinUI Next Settings");
+     SDL_Surface *surface = TTF_RenderText_Solid(font, light_name_text, color);
+     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+     int text_width = surface->w;
+     int text_height = surface->h;
+     SDL_FreeSurface(surface);
+
+     // Calculate centered position
+     SDL_Rect dstrect = (SDL_Rect){50, 30, text_width, text_height};
+     SDL_RenderCopy(renderer, texture, NULL, &dstrect);
+     SDL_DestroyTexture(texture);
 
         for (int j = 0; j < 6; ++j)
         {
