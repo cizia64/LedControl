@@ -18,41 +18,20 @@
 typedef struct
 {
     char name[MAX_NAME_LEN];
-    int effect;
-    uint32_t color;
+    int font;
+    uint32_t color1;
     uint32_t color2;
-    int duration;
-    char friendlyname[50];
-    int maxeffects;
-    int brightness;
-    int trigger;
-} LightSettings;
+    uint32_t color3;
+    uint32_t backgroundColor;
+} MinUISettings;
 
-LightSettings lights[NUM_OPTIONS];
-const char *lightnames[] = {
-    "F1 key", "F2 key", "Top bar", "L&R triggers"};
-#define NROF_TRIGGERS 14
-const char *triggernames[] = {
-    "B", "A", "Y", "X", "L", "R", "FN1", "FN2", "MENU", "SELECT", "START", "ALL", "LR", "DPAD"};
+MinUISettings settings;
 
-const char *effect_names[] = {
-    "Linear", "Breathe", "Interval Breathe", "Static",
-    "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive"};
-const char *topbar_effect_names[] = {
-    "Linear", "Breathe", "Interval Breathe", "Static",
-    "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Topbar Rainbow", "Topbar night"};
-const char *lr_effect_names[] = {
-    "Linear", "Breathe", "Interval Breathe", "Static",
-    "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "LR Rainbow", "LR Reactive"};
-
-int read_settings(const char *filename, LightSettings *lights, int max_lights)
+int read_settings(const char *filename, int max_lights)
 {
 
     char diskfilename[256];
-    snprintf(diskfilename, sizeof(diskfilename), "/etc/LedControl/%s", filename);
+    snprintf(diskfilename, sizeof(diskfilename), "/mnt/SDCARD/.userdata/%s", filename);
     FILE *file = fopen(diskfilename, "r");
     if (file == NULL)
     {
@@ -73,9 +52,8 @@ int read_settings(const char *filename, LightSettings *lights, int max_lights)
                 current_light++;
                 if (current_light < max_lights)
                 {
-                    strncpy(lights[current_light].name, light_name, MAX_NAME_LEN - 1);
-                    strncpy(lights[current_light].friendlyname, lightnames[current_light], MAX_NAME_LEN - 1);
-                    lights[current_light].name[MAX_NAME_LEN - 1] = '\0'; // Ensure null-termination
+                    strncpy(settings.name, light_name, MAX_NAME_LEN - 1);
+                    settings.name[MAX_NAME_LEN - 1] = '\0'; // Ensure null-termination
                 }
                 else
                 {
@@ -88,39 +66,29 @@ int read_settings(const char *filename, LightSettings *lights, int max_lights)
             int temp_value;
             uint32_t temp_color;
 
-            if (sscanf(line, "effect=%d", &temp_value) == 1)
+            if (sscanf(line, "font=%s", &temp_value) == 1)
             {
-                lights[current_light].effect = temp_value;
+                settings.font = temp_value;
                 continue;
             }
-            if (sscanf(line, "color=%x", &temp_color) == 1)
+            if (sscanf(line, "color1=%x", &temp_color) == 1)
             {
-                lights[current_light].color = temp_color;
+                settings.color1 = temp_color;
                 continue;
             }
             if (sscanf(line, "color2=%x", &temp_color) == 1)
             {
-                lights[current_light].color2 = temp_color;
+                settings.color2 = temp_color;
                 continue;
             }
-            if (sscanf(line, "duration=%d", &temp_value) == 1)
+            if (sscanf(line, "color3=%x", &temp_color) == 1)
             {
-                lights[current_light].duration = temp_value;
+                settings.color3 = temp_color;
                 continue;
             }
-            if (sscanf(line, "maxeffects=%d", &temp_value) == 1)
+            if (sscanf(line, "backgroundcolor=%x", &temp_color) == 1)
             {
-                lights[current_light].maxeffects = temp_value;
-                continue;
-            }
-            if (sscanf(line, "brightness=%d", &temp_value) == 1)
-            {
-                lights[current_light].brightness = temp_value;
-                continue;
-            }
-            if (sscanf(line, "trigger=%d", &temp_value) == 1)
-            {
-                lights[current_light].trigger = temp_value;
+                settings.backgroundColor = temp_color;
                 continue;
             }
         }
@@ -130,10 +98,10 @@ int read_settings(const char *filename, LightSettings *lights, int max_lights)
     return 0;
 }
 
-int save_settings(const char *filename, LightSettings *lights, int max_lights)
+int save_settings(const char *filename, int max_lights)
 {
     char diskfilename[256];
-    snprintf(diskfilename, sizeof(diskfilename), "/etc/LedControl/%s", filename);
+    snprintf(diskfilename, sizeof(diskfilename), "/mnt/SDCARD/.userdata/%s", filename);
     FILE *file = fopen(diskfilename, "w");
     if (file == NULL)
     {
@@ -141,42 +109,21 @@ int save_settings(const char *filename, LightSettings *lights, int max_lights)
         return 1;
     }
 
-    char shmfile[256];
-    snprintf(shmfile, sizeof(shmfile), "/dev/shm/%s", filename);
-    FILE *shm_file = fopen(shmfile, "w");
-    if (shm_file == NULL)
-    {
-        perror("Unable to open settings file for writing");
-        return 1;
-    }
 
-    for (int i = 0; i < max_lights; ++i)
-    {
-        fprintf(file, "[%s]\n", lights[i].name);
-        fprintf(file, "effect=%d\n", lights[i].effect);
-        fprintf(file, "color=0x%06X\n", lights[i].color);
-        fprintf(file, "color2=0x%06X\n", lights[i].color2);
-        fprintf(file, "duration=%d\n", lights[i].duration);
-        fprintf(file, "maxeffects=%d\n", lights[i].maxeffects);
-        fprintf(file, "brightness=%d\n", lights[i].brightness);
-        fprintf(file, "trigger=%d\n\n", lights[i].trigger);
-
-        fprintf(shm_file, "[%s]\n", lights[i].name);
-        fprintf(shm_file, "effect=%d\n", lights[i].effect);
-        fprintf(shm_file, "color=0x%06X\n", lights[i].color);
-        fprintf(shm_file, "color2=0x%06X\n", lights[i].color2);
-        fprintf(shm_file, "duration=%d\n", lights[i].duration);
-        fprintf(shm_file, "maxeffects=%d\n", lights[i].maxeffects);
-        fprintf(shm_file, "brightness=%d\n", lights[i].brightness);
-        fprintf(shm_file, "trigger=%d\n\n", lights[i].trigger);
-    }
+    fprintf(file, "font=%s\n", settings.font);
+    fprintf(file, "color1=0x%06X\n", settings.color1);
+    fprintf(file, "color2=0x%06X\n", settings.color2);
+    fprintf(file, "color3=0x%06X\n", settings.color3);
+    fprintf(file, "backgroundcolor=0x%06X\n", settings.backgroundColor);
+    
 
     fclose(file);
-    fclose(shm_file);
     return 0;
 }
 
-void handle_light_input(LightSettings *light, SDL_Event *event, int selected_setting)
+#define fontcount 1
+
+void handle_light_input(SDL_Event *event, int selected_setting)
 {
     const uint32_t bright_colors[] = {
         // Blues
@@ -249,11 +196,11 @@ void handle_light_input(LightSettings *light, SDL_Event *event, int selected_set
     case 0: // Effect
         if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
         {
-            light->effect = (light->effect % light->maxeffects) + 1; // Increase effect (1 to 8)
+            settings.font = (settings.font % fontcount) + 1; // Increase effect (1 to 8)
         }
         else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
         {
-            light->effect = (light->effect - 2 + light->maxeffects) % light->maxeffects + 1; // Decrease effect (1 to 8)
+            settings.font = (settings.font - 2 + fontcount) % fontcount + 1; // Decrease effect (1 to 8)
         }
         break;
     case 1: // Color
@@ -262,93 +209,118 @@ void handle_light_input(LightSettings *light, SDL_Event *event, int selected_set
             int current_index = -1;
             for (int i = 0; i < num_bright_colors; i++)
             {
-                if (bright_colors[i] == light->color)
+                if (bright_colors[i] == settings.color1)
                 {
                     current_index = i;
                     break;
                 }
             }
-            SDL_Log("saved settings to disk and shm %d", current_index);
-            light->color = bright_colors[(current_index + 1) % num_bright_colors];
+            settings.color1 = bright_colors[(current_index + 1) % num_bright_colors];
         }
         else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
         {
             int current_index = -1;
             for (int i = 0; i < num_bright_colors; i++)
             {
-                if (bright_colors[i] == light->color)
+                if (bright_colors[i] == settings.color1)
                 {
                     current_index = i;
                     break;
                 }
             }
-            light->color = bright_colors[(current_index - 1 + num_bright_colors) % num_bright_colors];
+            settings.color1 = bright_colors[(current_index - 1 + num_bright_colors) % num_bright_colors];
         }
         break;
-    case 2: // Color2
+    case 2: // Color
         if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
         {
             int current_index = -1;
             for (int i = 0; i < num_bright_colors; i++)
             {
-                if (bright_colors[i] == light->color2)
+                if (bright_colors[i] == settings.color2)
                 {
                     current_index = i;
                     break;
                 }
             }
-            SDL_Log("saved settings to disk and shm %d", current_index);
-            light->color2 = bright_colors[(current_index + 1) % num_bright_colors];
+            settings.color2 = bright_colors[(current_index + 1) % num_bright_colors];
         }
         else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
         {
             int current_index = -1;
             for (int i = 0; i < num_bright_colors; i++)
             {
-                if (bright_colors[i] == light->color2)
+                if (bright_colors[i] == settings.color2)
                 {
                     current_index = i;
                     break;
                 }
             }
-            light->color2 = bright_colors[(current_index - 1 + num_bright_colors) % num_bright_colors];
+            settings.color2 = bright_colors[(current_index - 1 + num_bright_colors) % num_bright_colors];
         }
         break;
-    case 3: // Duration
+    case 3: // Color
         if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
         {
-            light->duration = (light->duration + 100) % 5000; // Increase duration
+            int current_index = -1;
+            for (int i = 0; i < num_bright_colors; i++)
+            {
+                if (bright_colors[i] == settings.color3)
+                {
+                    current_index = i;
+                    break;
+                }
+            }
+            settings.color3 = bright_colors[(current_index + 1) % num_bright_colors];
         }
         else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
         {
-            light->duration = (light->duration - 100 + 5000) % 5000; // Decrease duration
+            int current_index = -1;
+            for (int i = 0; i < num_bright_colors; i++)
+            {
+                if (bright_colors[i] == settings.color3)
+                {
+                    current_index = i;
+                    break;
+                }
+            }
+            settings.color3 = bright_colors[(current_index - 1 + num_bright_colors) % num_bright_colors];
         }
         break;
-    case 4: // Brightness
+    case 4: // Color
         if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
         {
-            light->brightness = (light->brightness + 5) % 105; // Increase duration
+            int current_index = -1;
+            for (int i = 0; i < num_bright_colors; i++)
+            {
+                if (bright_colors[i] == settings.backgroundColor)
+                {
+                    current_index = i;
+                    break;
+                }
+            }
+            settings.backgroundColor = bright_colors[(current_index + 1) % num_bright_colors];
         }
         else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
         {
-            light->brightness = (light->brightness - 5 + 105) % 105; // Decrease duration
+            int current_index = -1;
+            for (int i = 0; i < num_bright_colors; i++)
+            {
+                if (bright_colors[i] == settings.backgroundColor)
+                {
+                    current_index = i;
+                    break;
+                }
+            }
+            settings.backgroundColor = bright_colors[(current_index - 1 + num_bright_colors) % num_bright_colors];
         }
         break;
-    case 5: // trigger
-        if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
-        {
-            light->trigger = (light->trigger % NROF_TRIGGERS) + 1; // Increase effect (1 to 8)
-        }
-        else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
-        {
-            light->trigger = (light->trigger - 2 + NROF_TRIGGERS) % NROF_TRIGGERS + 1; // Decrease effect (1 to 8)
-        }
-        break;
+   
     }
 
     // Save settings after each change
 
-    save_settings("settings.txt", lights, NUM_OPTIONS);
+    save_settings("minuisettings.txt", NUM_OPTIONS);
 }
 
 void draw_filled_circle(SDL_Renderer *renderer, int x, int y, int radius)
@@ -446,7 +418,7 @@ int main(int argc, char *argv[])
     }
 
     // Read initial settings
-    if (read_settings("settings.txt", lights, NUM_OPTIONS) != 0)
+    if (read_settings("minuisettings.txt", NUM_OPTIONS) != 0)
     {
         TTF_CloseFont(font);
         SDL_DestroyRenderer(renderer);
@@ -519,7 +491,7 @@ int main(int argc, char *argv[])
                     break;
                 case SDLK_RIGHT:
                 case SDLK_LEFT:
-                    handle_light_input(&lights[selected_light], &event, selected_setting);
+                    handle_light_input(&event, selected_setting);
                     break;
                 case SDLK_RETURN:
                 case SDLK_KP_ENTER:
@@ -550,7 +522,7 @@ int main(int argc, char *argv[])
                     break;
                 case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
                 case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                    handle_light_input(&lights[selected_light], &event, selected_setting);
+                    handle_light_input(&event, selected_setting);
                     break;
                 case SDL_CONTROLLER_BUTTON_B:
                     // strcpy(last_button_pressed, "DPAD Down");
@@ -577,30 +549,15 @@ int main(int argc, char *argv[])
         SDL_Color highlight_color = {0, 0, 0, 255};    // Cyan color for the current setting
         SDL_Color selected_color = {255, 255, 0, 255}; // Yellow color for the selected option
 
-        // Display light name
-        char light_name_text[256];
-        snprintf(light_name_text, sizeof(light_name_text), "%s", lights[selected_light].friendlyname);
-        SDL_Surface *surface = TTF_RenderText_Solid(font, light_name_text, color);
-        SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-
-        int text_width = surface->w;
-        int text_height = surface->h;
-        SDL_FreeSurface(surface);
-
-        // Calculate centered position
-        SDL_Rect dstrect = (SDL_Rect){50, 30, text_width, text_height};
-        SDL_RenderCopy(renderer, texture, NULL, &dstrect);
-        SDL_DestroyTexture(texture);
 
         // Display settings
-        const char *settings_labels[6] = {"Effect", "Color", "Color2", "Speed", "Brightness", "Trigger"};
+        const char *settings_labels[6] = {"Font", "Color1", "Color2", "Color3", "BackgroundColor"};
         int settings_values[6] = {
-            lights[selected_light].effect,
-            lights[selected_light].color,
-            lights[selected_light].color2,
-            lights[selected_light].duration,
-            lights[selected_light].brightness,
-            lights[selected_light].trigger,
+            settings.font,
+            settings.color1,
+            settings.color2,
+            settings.color3,
+            settings.backgroundColor,
         };
 
         for (int j = 0; j < 6; ++j)
@@ -609,31 +566,32 @@ int main(int argc, char *argv[])
 
             SDL_Color bgcolor = (j == selected_setting) ? color : highlight_color;
 
-            if (j == 0)
-            { // Display effect name instead of number
-                snprintf(setting_text, sizeof(setting_text), "%s: %s", settings_labels[j], selected_light == 3 ? lr_effect_names[settings_values[j] - 1] : selected_light == 2 ? topbar_effect_names[settings_values[j] - 1]
-                                                                                                                                                                               : effect_names[settings_values[j] - 1]);
+            // saving this for font names
+            // if (j == 100)
+            // { // Display font name instead of number
+            //     snprintf(setting_text, sizeof(setting_text), "%s: %s", settings_labels[j], selected_light == 3 ? lr_effect_names[settings_values[j] - 1] : selected_light == 2 ? topbar_effect_names[settings_values[j] - 1]
+            //                                                                                                                                                                    : effect_names[settings_values[j] - 1]);
 
-                // Render the effect name
-                SDL_Color current_color = (j == selected_setting) ? highlight_color : color;
+            //     // Render the effect name
+            //     SDL_Color current_color = (j == selected_setting) ? highlight_color : color;
 
-                surface = TTF_RenderText_Solid(font, setting_text, current_color);
-                texture = SDL_CreateTextureFromSurface(renderer, surface);
+            //     surface = TTF_RenderText_Solid(font, setting_text, current_color);
+            //     texture = SDL_CreateTextureFromSurface(renderer, surface);
 
-                text_width = surface->w;
-                text_height = surface->h;
+            //     text_width = surface->w;
+            //     text_height = surface->h;
 
-                SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
-                draw_rounded_rect(renderer, 20, 115, text_width + 60, 88, 40);
+            //     SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
+            //     draw_rounded_rect(renderer, 20, 115, text_width + 60, 88, 40);
 
-                SDL_FreeSurface(surface);
+            //     SDL_FreeSurface(surface);
 
-                // Calculate centered position
-                dstrect = (SDL_Rect){50, 122, text_width, text_height};
-                SDL_RenderCopy(renderer, texture, NULL, &dstrect);
-                SDL_DestroyTexture(texture);
-            }
-            else if (j < 3)
+            //     // Calculate centered position
+            //     dstrect = (SDL_Rect){50, 122, text_width, text_height};
+            //     SDL_RenderCopy(renderer, texture, NULL, &dstrect);
+            //     SDL_DestroyTexture(texture);
+            // }
+           if (j < 5)
             { // Display color as hex code
                 snprintf(setting_text, sizeof(setting_text), "%s:", settings_labels[j]);
 
@@ -660,28 +618,7 @@ int main(int argc, char *argv[])
                 SDL_RenderCopy(renderer, texture, NULL, &dstrect);
                 SDL_DestroyTexture(texture);
             }
-            else if (j == 5)
-            { // Display effect name instead of number
-                snprintf(setting_text, sizeof(setting_text), "%s: %s", settings_labels[j], triggernames[settings_values[j] - 1]);
-
-                SDL_Color current_color = (j == selected_setting) ? highlight_color : color;
-
-                surface = TTF_RenderText_Solid(font, setting_text, current_color);
-                texture = SDL_CreateTextureFromSurface(renderer, surface);
-
-                text_width = surface->w;
-                text_height = surface->h;
-                SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
-                draw_rounded_rect(renderer, 20, 115 + j * 92, text_width + 60, 88, 40);
-                SDL_FreeSurface(surface);
-
-                // Calculate centered position
-                dstrect = (SDL_Rect){50, 122 + j * 92, text_width, text_height};
-
-                SDL_RenderCopy(renderer, texture, NULL, &dstrect);
-
-                SDL_DestroyTexture(texture);
-            }
+           
             else
             {
                 snprintf(setting_text, sizeof(setting_text), "%s: %d", settings_labels[j], settings_values[j]);
@@ -705,33 +642,6 @@ int main(int argc, char *argv[])
                 SDL_DestroyTexture(texture);
             }
         }
-
-        SDL_SetRenderDrawColor(renderer, 32, 36, 32, 255);
-        draw_rounded_rect(renderer, 20, window_height - 90, 330, 80, 40);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        draw_rounded_rect(renderer, 30, window_height - 80, 100, 60, 30);
-        char button_text[256];
-        snprintf(button_text, sizeof(button_text), "L/R");
-        surface = TTF_RenderText_Solid(fontsm, button_text, darkcolor);
-        texture = SDL_CreateTextureFromSurface(renderer, surface);
-        text_width = surface->w;
-        text_height = surface->h;
-        // Calculate centered position
-        dstrect = (SDL_Rect){50, window_height - 76, text_width, text_height};
-        SDL_RenderCopy(renderer, texture, NULL, &dstrect);
-        SDL_DestroyTexture(texture);
-        SDL_FreeSurface(surface);
-
-        snprintf(button_text, sizeof(button_text), "Light select");
-        surface = TTF_RenderText_Solid(fontsm, button_text, color);
-        texture = SDL_CreateTextureFromSurface(renderer, surface);
-        text_width = surface->w;
-        text_height = surface->h;
-        // Calculate centered position
-        dstrect = (SDL_Rect){140, window_height - 78, text_width, text_height};
-        SDL_RenderCopy(renderer, texture, NULL, &dstrect);
-        SDL_DestroyTexture(texture);
-        SDL_FreeSurface(surface);
 
         SDL_SetRenderDrawColor(renderer, 32, 36, 32, 255);
         draw_rounded_rect(renderer, window_width - 190, window_height - 90, 170, 80, 40);
