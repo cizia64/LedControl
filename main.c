@@ -13,25 +13,26 @@
 #include <dirent.h>
 #include <string.h>
 
-#define NUM_OPTIONS 4
+#define NUM_OPTIONS 3
 #define MAX_NAME_LEN 50
 typedef struct
 {
-    char name[MAX_NAME_LEN];
     int font;
     uint32_t color1;
     uint32_t color2;
     uint32_t color3;
-    uint32_t backgroundColor;
 } MinUISettings;
 
+#define fontcount 2
+const char *fontnames[] = {
+    "Next", "OG"};
 MinUISettings settings;
 
-int read_settings(const char *filename, int max_lights)
+int read_settings(const char *filename)
 {
 
     char diskfilename[256];
-    snprintf(diskfilename, sizeof(diskfilename), "%s", filename);
+    snprintf(diskfilename, sizeof(diskfilename), "/mnt/SDCARD/.userdata/%s", filename);
     FILE *file = fopen(diskfilename, "r");
     if (file == NULL)
     {
@@ -43,26 +44,7 @@ int read_settings(const char *filename, int max_lights)
     int current_light = -1;
     while (fgets(line, sizeof(line), file))
     {
-        if (line[0] == '[')
-        {
-            // Section header
-            char light_name[MAX_NAME_LEN];
-            if (sscanf(line, "[%49[^]]]", light_name) == 1)
-            {
-                current_light++;
-                if (current_light < max_lights)
-                {
-                    strncpy(settings.name, light_name, MAX_NAME_LEN - 1);
-                    settings.name[MAX_NAME_LEN - 1] = '\0'; // Ensure null-termination
-                }
-                else
-                {
-                    current_light = -1; // Reset if max_lights exceeded
-                }
-            }
-        }
-        else if (current_light >= 0 && current_light < max_lights)
-        {
+        
             int temp_value;
             uint32_t temp_color;
 
@@ -86,22 +68,17 @@ int read_settings(const char *filename, int max_lights)
                 settings.color3 = temp_color;
                 continue;
             }
-            if (sscanf(line, "backgroundcolor=%x", &temp_color) == 1)
-            {
-                settings.backgroundColor = temp_color;
-                continue;
-            }
-        }
+        
     }
 
     fclose(file);
     return 0;
 }
 
-int save_settings(const char *filename, int max_lights)
+int save_settings(const char *filename)
 {
     char diskfilename[256];
-    snprintf(diskfilename, sizeof(diskfilename), "%s", filename);
+    snprintf(diskfilename, sizeof(diskfilename), "/mnt/SDCARD/.userdata/%s", filename);
     FILE *file = fopen(diskfilename, "w");
     if (file == NULL)
     {
@@ -114,79 +91,37 @@ int save_settings(const char *filename, int max_lights)
     fprintf(file, "color1=0x%06X\n", settings.color1);
     fprintf(file, "color2=0x%06X\n", settings.color2);
     fprintf(file, "color3=0x%06X\n", settings.color3);
-    fprintf(file, "backgroundcolor=0x%06X\n", settings.backgroundColor);
     
 
     fclose(file);
     return 0;
 }
 
-#define fontcount 1
+
 
 void handle_light_input(SDL_Event *event, int selected_setting)
 {
     const uint32_t bright_colors[] = {
         // Blues
-        0x000080, // Navy Blue
-        0x0080FF, // Sky Blue
-        0x00BFFF, // Deep Sky Blue
-        0x8080FF, // Light Blue
-        0x483D8B, // Dark Slate Blue
-        0x7B68EE, // Medium Slate Blue
-
+        0x000022, 0x000044, 0x000066, 0x000088, 0x0000AA, 0x0000CC, 0x3366FF, 0x4D7AFF, 0x6699FF, 0x80B3FF, 0x99CCFF, 0xB3D9FF,
         // Cyan
-        0x00FFFF, // Cyan
-        0x40E0D0, // Turquoise
-        0x80FFFF, // Light Cyan
-        0x008080, // Teal
-        0x00CED1, // Dark Turquoise
-        0x20B2AA, // Light Sea Green
-
+        0x002222, 0x004444, 0x006666, 0x008888, 0x00AAAA, 0x00CCCC, 0x33FFFF, 0x4DFFFF, 0x66FFFF, 0x80FFFF, 0x99FFFF, 0xB3FFFF,
         // Green
-        0x00FF00, // Green
-        0x32CD32, // Lime Green
-        0x7FFF00, // Chartreuse
-        0x80FF00, // Lime
-        0x80FF80, // Light Green
-        0xADFF2F, // Green Yellow
-
+        0x002200, 0x004400, 0x006600, 0x008800, 0x00AA00, 0x00CC00, 0x33FF33, 0x4DFF4D, 0x66FF66, 0x80FF80, 0x99FF99, 0xB3FFB3,
         // Magenta
-        0xFF00FF, // Magenta
-        0xFF80C0, // Light Magenta
-        0xEE82EE, // Violet
-        0xDA70D6, // Orchid
-        0xDDA0DD, // Plum
-        0xBA55D3, // Medium Orchid
-
+        0x220022, 0x440044, 0x660066, 0x880088, 0xAA00AA, 0xCC00CC, 0xFF33FF, 0xFF4DFF, 0xFF66FF, 0xFF80FF, 0xFF99FF, 0xFFB3FF,
         // Purple
-        0x800080, // Purple
-        0x8A2BE2, // Blue Violet
-        0x9400D3, // Dark Violet
-        0x9B30FF, // Purple2
-        0xA020F0, // Purple
-        0x9370DB, // Medium Purple
-
+        0x110022, 0x220044, 0x330066, 0x440088, 0x5500AA, 0x6600CC, 0x8833FF, 0x994DFF, 0xAA66FF, 0xBB80FF, 0xCC99FF, 0xDDB3FF,
         // Red
-        0xFF0000, // Red
-        0xFF4500, // Red Orange
-        0xFF6347, // Tomato
-        0xDC143C, // Crimson
-        0xFF69B4, // Hot Pink
-        0xFF1493, // Deep Pink
-
-        // Yellow and Orange
-        0xFFD700, // Gold
-        0xFFA500, // Orange
-        0xFF8000, // Orange Red
-        0xFFFF00, // Yellow
-        0xFFFF80, // Light Yellow
-        0xFFDAB9, // Peach Puff
-
-        // Others
-        0xFFFFFF, // White
-        0xC0C0C0, // Silver
-        0x000000  // Black
+        0x220000, 0x440000, 0x660000, 0x880000, 0xAA0000, 0xCC0000, 0xFF3333, 0xFF4D4D, 0xFF6666, 0xFF8080, 0xFF9999, 0xFFB3B3,
+        // Yellow
+        0x222200, 0x444400, 0x666600, 0x888800, 0xAAAA00, 0xCCCC00, 0xFFFF33, 0xFFFF4D, 0xFFFF66, 0xFFFF80, 0xFFFF99, 0xFFFFB3,
+        // Orange
+        0x221100, 0x442200, 0x663300, 0x884400, 0xAA5500, 0xCC6600, 0xFF8833, 0xFF994D, 0xFFAA66, 0xFFBB80, 0xFFCC99, 0xFFDDB3,
+        // White to Black Gradient
+        0x000000, 0x141414, 0x282828, 0x3C3C3C, 0x505050, 0x646464, 0x8C8C8C, 0xA0A0A0, 0xB4B4B4, 0xC8C8C8, 0xDCDCDC, 0xFFFFFF
     };
+    
 
     const int num_bright_colors = sizeof(bright_colors) / sizeof(bright_colors[0]);
 
@@ -287,40 +222,12 @@ void handle_light_input(SDL_Event *event, int selected_setting)
             settings.color3 = bright_colors[(current_index - 1 + num_bright_colors) % num_bright_colors];
         }
         break;
-    case 4: // Color
-        if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
-        {
-            int current_index = -1;
-            for (int i = 0; i < num_bright_colors; i++)
-            {
-                if (bright_colors[i] == settings.backgroundColor)
-                {
-                    current_index = i;
-                    break;
-                }
-            }
-            settings.backgroundColor = bright_colors[(current_index + 1) % num_bright_colors];
-        }
-        else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
-        {
-            int current_index = -1;
-            for (int i = 0; i < num_bright_colors; i++)
-            {
-                if (bright_colors[i] == settings.backgroundColor)
-                {
-                    current_index = i;
-                    break;
-                }
-            }
-            settings.backgroundColor = bright_colors[(current_index - 1 + num_bright_colors) % num_bright_colors];
-        }
-        break;
    
     }
 
     // Save settings after each change
 
-    save_settings("minuisettings.txt", NUM_OPTIONS);
+    save_settings("minuisettings.txt");
 }
 
 void draw_filled_circle(SDL_Renderer *renderer, int x, int y, int radius)
@@ -418,7 +325,7 @@ int main(int argc, char *argv[])
     }
 
     // Read initial settings
-    if (read_settings("minuisettings.txt", NUM_OPTIONS) != 0)
+    if (read_settings("minuisettings.txt") != 0)
     {
         TTF_CloseFont(font);
         SDL_DestroyRenderer(renderer);
@@ -551,13 +458,12 @@ int main(int argc, char *argv[])
 
 
         // Display settings
-        const char *settings_labels[6] = {"Font", "Color1", "Color2", "Color3", "BackgroundColor"};
-        int settings_values[6] = {
+        const char *settings_labels[4] = {"Font", "Color1", "Color2", "Color3"};
+        int settings_values[4] = {
             settings.font,
             settings.color1,
             settings.color2,
             settings.color3,
-            settings.backgroundColor,
         };
 
      // Display light name
@@ -574,39 +480,37 @@ int main(int argc, char *argv[])
      SDL_Rect dstrect = (SDL_Rect){50, 30, text_width, text_height};
      SDL_RenderCopy(renderer, texture, NULL, &dstrect);
      SDL_DestroyTexture(texture);
-
-        for (int j = 0; j < 6; ++j)
+        for (int j = 0; j < 4; ++j)
         {
             char setting_text[256];
 
             SDL_Color bgcolor = (j == selected_setting) ? color : highlight_color;
 
             // saving this for font names
-            // if (j == 100)
-            // { // Display font name instead of number
-            //     snprintf(setting_text, sizeof(setting_text), "%s: %s", settings_labels[j], selected_light == 3 ? lr_effect_names[settings_values[j] - 1] : selected_light == 2 ? topbar_effect_names[settings_values[j] - 1]
-            //                                                                                                                                                                    : effect_names[settings_values[j] - 1]);
+            if (j == 0)
+            { // Display font name instead of number
+         
+                snprintf(setting_text, sizeof(setting_text), "%s: %s", settings_labels[j], fontnames[settings_values[j] - 1]);
 
-            //     // Render the effect name
-            //     SDL_Color current_color = (j == selected_setting) ? highlight_color : color;
+                SDL_Color current_color = (j == selected_setting) ? highlight_color : color;
 
-            //     surface = TTF_RenderText_Solid(font, setting_text, current_color);
-            //     texture = SDL_CreateTextureFromSurface(renderer, surface);
+                surface = TTF_RenderText_Solid(font, setting_text, current_color);
+                texture = SDL_CreateTextureFromSurface(renderer, surface);
 
-            //     text_width = surface->w;
-            //     text_height = surface->h;
+                text_width = surface->w;
+                text_height = surface->h;
+                SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
+                draw_rounded_rect(renderer, 20, 115 + j * 92, text_width + 60, 88, 40);
+                SDL_FreeSurface(surface);
 
-            //     SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
-            //     draw_rounded_rect(renderer, 20, 115, text_width + 60, 88, 40);
+                // Calculate centered position
+                dstrect = (SDL_Rect){50, 122 + j * 92, text_width, text_height};
 
-            //     SDL_FreeSurface(surface);
+                SDL_RenderCopy(renderer, texture, NULL, &dstrect);
 
-            //     // Calculate centered position
-            //     dstrect = (SDL_Rect){50, 122, text_width, text_height};
-            //     SDL_RenderCopy(renderer, texture, NULL, &dstrect);
-            //     SDL_DestroyTexture(texture);
-            // }
-           if (j < 5)
+                SDL_DestroyTexture(texture);
+            }
+            else if (j < 5)
             { // Display color as hex code
                 snprintf(setting_text, sizeof(setting_text), "%s:", settings_labels[j]);
 
@@ -657,7 +561,6 @@ int main(int argc, char *argv[])
                 SDL_DestroyTexture(texture);
             }
         }
-
         SDL_SetRenderDrawColor(renderer, 32, 36, 32, 255);
         draw_rounded_rect(renderer, window_width - 190, window_height - 90, 170, 80, 40);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -684,17 +587,6 @@ int main(int argc, char *argv[])
         SDL_RenderCopy(renderer, texture, NULL, &dstrect);
         SDL_DestroyTexture(texture);
         SDL_FreeSurface(surface);
-
-        // snprintf(button_text, sizeof(button_text), "By Robin Morgan :D");
-        // surface = TTF_RenderText_Solid(fontsm, button_text, color);
-        // texture = SDL_CreateTextureFromSurface(renderer, surface);
-        // text_width = surface->w;
-        // text_height = surface->h;
-
-        // dstrect = (SDL_Rect){(window_width - text_width) / 2, 580, text_width, text_height};
-        // SDL_RenderCopy(renderer, texture, NULL, &dstrect);
-        // SDL_DestroyTexture(texture);
-        // SDL_FreeSurface(surface);
 
         SDL_RenderPresent(renderer);
     }
