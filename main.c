@@ -560,6 +560,9 @@ int main(int argc, char *argv[])
             settings.backgroundColor,
         };
 
+        SDL_Surface *surface = TTF_RenderText_Solid(font, "MinUI config", color);
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
         for (int j = 0; j < 6; ++j)
         {
             char setting_text[256];
