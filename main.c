@@ -31,7 +31,7 @@ int read_settings(const char *filename, int max_lights)
 {
 
     char diskfilename[256];
-    snprintf(diskfilename, sizeof(diskfilename), "/mnt/SDCARD/.userdata/%s", filename);
+    snprintf(diskfilename, sizeof(diskfilename), "%s", filename);
     FILE *file = fopen(diskfilename, "r");
     if (file == NULL)
     {
@@ -66,7 +66,7 @@ int read_settings(const char *filename, int max_lights)
             int temp_value;
             uint32_t temp_color;
 
-            if (sscanf(line, "font=%s", &temp_value) == 1)
+            if (sscanf(line, "font=%i", &temp_value) == 1)
             {
                 settings.font = temp_value;
                 continue;
@@ -101,7 +101,7 @@ int read_settings(const char *filename, int max_lights)
 int save_settings(const char *filename, int max_lights)
 {
     char diskfilename[256];
-    snprintf(diskfilename, sizeof(diskfilename), "/mnt/SDCARD/.userdata/%s", filename);
+    snprintf(diskfilename, sizeof(diskfilename), "%s", filename);
     FILE *file = fopen(diskfilename, "w");
     if (file == NULL)
     {
@@ -110,7 +110,7 @@ int save_settings(const char *filename, int max_lights)
     }
 
 
-    fprintf(file, "font=%s\n", settings.font);
+    fprintf(file, "font=%i\n", settings.font);
     fprintf(file, "color1=0x%06X\n", settings.color1);
     fprintf(file, "color2=0x%06X\n", settings.color2);
     fprintf(file, "color3=0x%06X\n", settings.color3);
@@ -662,7 +662,7 @@ int main(int argc, char *argv[])
         draw_rounded_rect(renderer, window_width - 190, window_height - 90, 170, 80, 40);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         draw_rounded_rect(renderer, window_width - 180, window_height - 80, 60, 60, 30);
-
+        char button_text[256];
         snprintf(button_text, sizeof(button_text), "B");
         surface = TTF_RenderText_Solid(fontsm, button_text, darkcolor);
         texture = SDL_CreateTextureFromSurface(renderer, surface);
