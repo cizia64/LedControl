@@ -38,7 +38,7 @@ const char *triggernames[] = {
 const char *effect_names[] = {
     "Linear", "Breathe", "Interval Breathe", "Static",
     "Blink 1", "Blink 2", "Blink 3", "Color Drift", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Rainbow Snake", "Rotation", "Rotation Mirror"};
+    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Nothing", "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"} ;
 // const char *topbar_effect_names[] = {
 //     "Linear", "Breathe", "Interval Breathe", "Static",
 //     "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
@@ -409,7 +409,7 @@ char *read_effect_description(const char *effect_name) {
 
     FILE *f = fopen(path, "r");
     if (!f) {
-        snprintf(buffer, sizeof(buffer), "Aucune description disponible.");
+        snprintf(buffer, sizeof(buffer), "No description available.");
         return buffer;
     }
 
@@ -860,7 +860,7 @@ SDL_RenderFillRect(renderer, &rect);
         // text_width = surface->w;
         // text_height = surface->h;
 
-        // dstrect = (SDL_Rect){(window_width - text_width) / 2, 580, text_width, text_height};
+        // dstrect = (SDL_Rect){(window_width - text_width) / 2, 660, text_width, text_height};
         // SDL_RenderCopy(renderer, texture, NULL, &dstrect);
         // SDL_DestroyTexture(texture);
         // SDL_FreeSurface(surface);
