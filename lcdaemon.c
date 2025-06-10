@@ -1031,11 +1031,13 @@ if (read(fd, &event, sizeof(event)) > 0)
     }
 }
 
-
-        if (read_settings("led_daemon.conf", lights, MAX_LIGHTS) != 0)
-        {
-            return 1;
-        }
+if (access("/tmp/led_deamon_live", F_OK) == 0)
+{
+    if (read_settings("led_daemon.conf", lights, MAX_LIGHTS) != 0)
+    {
+        return 1;
+    }
+}
 
         for (int i = 0; i < MAX_LIGHTS; i++)
         {
