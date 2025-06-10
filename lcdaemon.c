@@ -153,7 +153,7 @@ void changebrightness(const char *dir, const LightSettings *lights)
     }
     chmodfile(filepath, 0);
 
-    // Joysticks left+right [lr] → lights[1]
+    // Joysticks gauche+droite [lr] → lights[1]
     snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
     chmodfile(filepath, 1);
     file = fopen(filepath, "w");
@@ -183,46 +183,13 @@ void handle_sigsleep()
 int read_settings(const char *filename, LightSettings *lights, int max_lights)
 {
     FILE *file;
-    if (first_run == 1)
-    {
-        // first run read settings from disk and write to shm
-        printf("First run\n");
-        char diskfilename[256];
-        snprintf(diskfilename, sizeof(diskfilename), "./%s", filename);
-        FILE *diskfile = fopen(diskfilename, "r");
-        if (diskfile == NULL)
-        {
-            perror("Unable to open settings file");
-            return 1;
-        }
-
-        char shmfile[256];
-        snprintf(shmfile, sizeof(shmfile), "/dev/shm/%s", filename);
-        file = fopen(shmfile, "w");
-        if (file == NULL)
-        {
-            perror("Unable to open /dev/shm/ file");
-            return 1;
-        }
-
-        char buffer[1024];
-        size_t bytesRead;
-        while ((bytesRead = fread(buffer, 1, sizeof(buffer), diskfile)) > 0)
-        {
-            fwrite(buffer, 1, bytesRead, file);
-        }
-
-        printf("File contents copied to /dev/shm/%s\n", filename);
-        fclose(file);
-        fclose(diskfile);
-    }
 
     char shmfile[256];
-    snprintf(shmfile, sizeof(shmfile), "/dev/shm/%s", filename);
+    snprintf(shmfile, sizeof(shmfile), "/mnt/SDCARD/System/etc/%s", filename);
     file = fopen(shmfile, "r");
     if (file == NULL)
     {
-        perror("Unable to open /dev/shm/ file");
+        perror("Unable to open /mnt/SDCARD/System/etc/ file");
         fclose(file);
         return 1;
     }
@@ -881,15 +848,15 @@ bool checkIfEffectChanged(LightSettings *light)
 int main()
 {
 
-    // int fd = open("/dev/input/js0", O_RDONLY | O_NONBLOCK);
-    // if (fd < 0)
-    // {
-    //     perror("Failed joystick device");
-    // }
-    // else
-    // {
-    //     jsopen = 1;
-    // }
+    int fd = open("/dev/input/js0", O_RDONLY | O_NONBLOCK);
+    if (fd < 0)
+    {
+        perror("Failed joystick device");
+    }
+    else
+    {
+        jsopen = 1;
+    }
 
     LightSettings lights[MAX_LIGHTS] = {0};
 
@@ -933,7 +900,7 @@ int main()
             }
         }
 
-        if (read_settings("settings.txt", lights, MAX_LIGHTS) != 0)
+        if (read_settings("led_daemon.conf", lights, MAX_LIGHTS) != 0)
         {
             return 1;
         }
@@ -965,7 +932,7 @@ for (int i = 0; i < MAX_LIGHTS; i++)
         first_run = false; // Set to false after the first iteration
         usleep(50000);
     }
-    // close(fd);
+    close(fd);
     printf("Received SIGTERM, exiting color app...\n");
 
     return 0;
