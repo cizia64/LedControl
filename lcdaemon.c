@@ -666,7 +666,20 @@ void update_light_settings(LightSettings *light, const char *dir)
                 }
             }
         }
-        else if (light->effect == 16)
+
+        
+
+if (light->effect == 16)
+{
+    // Ne rien faire : on laisse la main à un autre processus externe
+    fclose(file);
+    fclose(file2);
+
+    // chmodfile(filepath, 0);
+    // chmodfile(filepath2, 0);
+    return;
+}
+        else if (light->effect == 17)
         {
             fprintf(file2, "000000 ");
             ColorWave(light->progress, &r, &g, &b);
@@ -756,7 +769,35 @@ void update_light_settings(LightSettings *light, const char *dir)
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
         }
-        else if (light->effect == 18)
+         else if (light->effect == 18)
+        {
+int LED_COUNT = 23; // Valeurs réelles utilisées
+static int current_i = 1; // Commence à 1, car 0 est réservé
+
+
+    // Tout à zéro
+    for (int j = 0; j < LED_COUNT; j++) {
+        light->colorarray[j] = 0x000000;
+    }
+
+    // Ne jamais toucher colorarray[0]
+    if (current_i < 12) {
+        light->colorarray[current_i] = light->color;         // bande gauche (1 à 11)
+        light->colorarray[current_i + 11] = light->color;    // bande droite (12 à 22)
+    }
+
+    // Affichage
+    for (int j = 0; j < LED_COUNT; j++) {
+        fprintf(file2, "%06X ", light->colorarray[j]);
+    }
+
+    // Avance
+    current_i++;
+    if (current_i >= 12) {
+        current_i = 1;
+    }
+        }
+        else if (light->effect == 19)
         {
 
             int LED_COUNT = 23;       // Valeurs réelles utilisées
@@ -804,37 +845,10 @@ void update_light_settings(LightSettings *light, const char *dir)
                 
             
         }
-          else if (light->effect == 17)
-        {
-int LED_COUNT = 23; // Valeurs réelles utilisées
-static int current_i = 1; // Commence à 1, car 0 est réservé
+         
 
 
-    // Tout à zéro
-    for (int j = 0; j < LED_COUNT; j++) {
-        light->colorarray[j] = 0x000000;
-    }
-
-    // Ne jamais toucher colorarray[0]
-    if (current_i < 12) {
-        light->colorarray[current_i] = light->color;         // bande gauche (1 à 11)
-        light->colorarray[current_i + 11] = light->color;    // bande droite (12 à 22)
-    }
-
-    // Affichage
-    for (int j = 0; j < LED_COUNT; j++) {
-        fprintf(file2, "%06X ", light->colorarray[j]);
-    }
-
-    // Avance
-    current_i++;
-    if (current_i >= 12) {
-        current_i = 1;
-    }
-        }
-
-
-else if (light->effect == 19)
+else if (light->effect == 20)
 {
     // LEDs pour chaque direction du D-pad
     // Gauche : 1 2 3
@@ -888,6 +902,11 @@ else if (light->effect == 19)
         fprintf(file2, "%06X ", light->colorarray[j]);
     }
 }
+
+
+
+
+
 
 
 
@@ -1030,6 +1049,8 @@ if (read(fd, &event, sizeof(event)) > 0)
         }
     }
 }
+
+
 
 if (access("/tmp/led_deamon_live", F_OK) == 0)
 {

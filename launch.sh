@@ -37,3 +37,5 @@ touch /tmp/led_deamon_live
 
 rm /tmp/led_deamon_live
 
+# allow other programs to modify led states if led_daemon is set to Nothing
+chmod a+w /sys/class/led_anim/*
