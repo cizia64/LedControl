@@ -38,7 +38,7 @@ const char *triggernames[] = {
 const char *effect_names[] = {
     "Linear", "Breathe", "Interval Breathe", "Static",
     "Blink 1", "Blink 2", "Blink 3", "Color Drift", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Rainbow Snake", "Rotation", "Rotation"};
+    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Rainbow Snake", "Rotation", "Rotation Mirror"};
 // const char *topbar_effect_names[] = {
 //     "Linear", "Breathe", "Interval Breathe", "Static",
 //     "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
@@ -398,6 +398,29 @@ void draw_rounded_rect(SDL_Renderer *renderer, int x, int y, int w, int h, int r
 }
 
 char last_button_pressed[50] = "None";
+
+
+char *read_effect_description(const char *effect_name) {
+    static char buffer[1024];
+    memset(buffer, 0, sizeof(buffer));
+
+    char path[256];
+    snprintf(path, sizeof(path), "/mnt/SDCARD/System/led_effect_desc/%s.txt", effect_name);
+
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        snprintf(buffer, sizeof(buffer), "Aucune description disponible.");
+        return buffer;
+    }
+
+    fread(buffer, 1, sizeof(buffer) - 1, f);
+    fclose(f);
+    return buffer;
+}
+
+
+
+
 
 int main(int argc, char *argv[])
 {
@@ -841,6 +864,50 @@ SDL_RenderFillRect(renderer, &rect);
         // SDL_RenderCopy(renderer, texture, NULL, &dstrect);
         // SDL_DestroyTexture(texture);
         // SDL_FreeSurface(surface);
+
+
+
+
+// === Affichage de la description de l'effet ===
+int effect_index = lights[selected_light].effect - 1;
+const char *effect_name = effect_names[effect_index];
+char *description = read_effect_description(effect_name);
+
+// Cadre à droite
+int box_x = window_width / 2 + 20;
+int box_y = 120;
+int box_w = window_width / 2 - 40;
+int box_h = window_height - 200;
+
+SDL_Rect desc_box = {box_x, box_y, box_w, box_h};
+SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
+SDL_RenderFillRect(renderer, &desc_box);
+
+// Texte multiligne
+int line_height = 36;
+int max_lines = box_h / line_height;
+char *line = strtok(description, "\n");
+int line_num = 0;
+
+while (line && line_num < max_lines) {
+    SDL_Surface *line_surface = TTF_RenderText_Blended(fontsm, line, (SDL_Color){255, 255, 255, 255});
+    SDL_Texture *line_texture = SDL_CreateTextureFromSurface(renderer, line_surface);
+    SDL_Rect line_dst = {
+        .x = box_x + 10,
+        .y = box_y + 10 + line_num * line_height,
+        .w = line_surface->w,
+        .h = line_surface->h
+    };
+    SDL_RenderCopy(renderer, line_texture, NULL, &line_dst);
+    SDL_DestroyTexture(line_texture);
+    SDL_FreeSurface(line_surface);
+    line = strtok(NULL, "\n");
+    line_num++;
+}
+// ===========Fin Affichage de la description de l'effet ====================
+
+
+
 
         SDL_RenderPresent(renderer);
     }
