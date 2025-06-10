@@ -38,15 +38,15 @@ const char *triggernames[] = {
 const char *effect_names[] = {
     "Linear", "Breathe", "Interval Breathe", "Static",
     "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive"};
-const char *topbar_effect_names[] = {
-    "Linear", "Breathe", "Interval Breathe", "Static",
-    "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Topbar Rainbow", "Topbar night"};
-const char *lr_effect_names[] = {
-    "Linear", "Breathe", "Interval Breathe", "Static",
-    "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "LR Rainbow", "LR Reactive"};
+    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "dummy"};
+// const char *topbar_effect_names[] = {
+//     "Linear", "Breathe", "Interval Breathe", "Static",
+//     "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
+//     "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Topbar Rainbow", "Topbar night"};
+// const char *lr_effect_names[] = {
+//     "Linear", "Breathe", "Interval Breathe", "Static",
+//     "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
+//     "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "LR Rainbow", "LR Reactive"};
 
 int read_settings(const char *filename, LightSettings *lights, int max_lights)
 {
@@ -620,8 +620,13 @@ int main(int argc, char *argv[])
 
             if (j == 0)
             { // Display effect name instead of number
-                snprintf(setting_text, sizeof(setting_text), "%s: %s", settings_labels[j], selected_light == 3 ? lr_effect_names[settings_values[j] - 1] : selected_light == 2 ? topbar_effect_names[settings_values[j] - 1]
-                                                                                                                                                                               : effect_names[settings_values[j] - 1]);
+                // snprintf(setting_text, sizeof(setting_text), "%s: %s", settings_labels[j], selected_light == 3 ? lr_effect_names[settings_values[j] - 1] : selected_light == 2 ? topbar_effect_names[settings_values[j] - 1]
+                //                                                                                                                                                                : effect_names[settings_values[j] - 1]);
+
+
+snprintf(setting_text, sizeof(setting_text), "%s: %s",
+         settings_labels[j],
+         effect_names[settings_values[j] - 1]);
 
                 // Render the effect name
                 SDL_Color current_color = (j == selected_setting) ? highlight_color : color;
