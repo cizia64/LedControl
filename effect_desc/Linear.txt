@@ -1,0 +1,6 @@
+A simple steady glow
+without animation.
+ 
+ - Color1: Solid color.
+ - Brightness: Light intensity.
+ - No animation.

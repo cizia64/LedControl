@@ -1,0 +1,8 @@
+Stepped breathing effect
+with pauses between cycles,
+similar to a blink with
+soft fades.
+ 
+ - Color1: Primary color.
+ - Speed: Delay between steps.
+ - Brightness: Max intensity.
