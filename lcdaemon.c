@@ -16,7 +16,7 @@
 #include <dirent.h>
 #include <string.h>
 
-#define MAX_LIGHTS 10
+#define MAX_LIGHTS 2
 #define MAX_NAME_LEN 50
 
 typedef struct
@@ -141,17 +141,9 @@ void changebrightness(const char *dir, const LightSettings *lights)
 {
     char filepath[256];
     FILE *file;
-    // first set brightness
+
+    // LED centrale [m] → lights[0]
     snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
-    chmodfile(filepath, 1);
-    file = fopen(filepath, "w");
-    if (file != NULL)
-    {
-        fprintf(file, "%d\n", lights[2].brightness);
-        fclose(file);
-    }
-    chmodfile(filepath, 0);
-    snprintf(filepath, sizeof(filepath), "%s/max_scale_f1f2", dir);
     chmodfile(filepath, 1);
     file = fopen(filepath, "w");
     if (file != NULL)
@@ -160,12 +152,14 @@ void changebrightness(const char *dir, const LightSettings *lights)
         fclose(file);
     }
     chmodfile(filepath, 0);
-    snprintf(filepath, sizeof(filepath), "%s/max_scale_lr", dir);
+
+    // Joysticks left+right [lr] → lights[1]
+    snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
     chmodfile(filepath, 1);
     file = fopen(filepath, "w");
     if (file != NULL)
     {
-        fprintf(file, "%d\n", lights[3].brightness);
+        fprintf(file, "%d\n", lights[1].brightness);
         fclose(file);
     }
     chmodfile(filepath, 0);
@@ -194,7 +188,7 @@ int read_settings(const char *filename, LightSettings *lights, int max_lights)
         // first run read settings from disk and write to shm
         printf("First run\n");
         char diskfilename[256];
-        snprintf(diskfilename, sizeof(diskfilename), "/etc/LedControl/%s", filename);
+        snprintf(diskfilename, sizeof(diskfilename), "./%s", filename);
         FILE *diskfile = fopen(diskfilename, "r");
         if (diskfile == NULL)
         {
@@ -241,20 +235,23 @@ int read_settings(const char *filename, LightSettings *lights, int max_lights)
         {
             // Section header
             char light_name[MAX_NAME_LEN];
-            if (sscanf(line, "[%49[^]]]", light_name) == 1)
-            {
-                current_light++;
-                if (current_light < max_lights)
-                {
-                    strncpy(lights[current_light].name, light_name, MAX_NAME_LEN - 1);
-                    lights[current_light].name[MAX_NAME_LEN - 1] = '\0'; // Ensure null-termination
-                    lights[current_light].updated = false;               // Initialize updated flag
-                }
-                else
-                {
-                    current_light = -1; // Reset if max_lights exceeded
-                }
-            }
+if (sscanf(line, "[%49[^]]]", light_name) == 1)
+{
+    if (strcmp(light_name, "m") == 0)
+        current_light = 0;
+    else if (strcmp(light_name, "lr") == 0)
+        current_light = 1;
+    else
+        current_light = -1; // ignore les autres
+
+    if (current_light != -1)
+    {
+        strncpy(lights[current_light].name, light_name, MAX_NAME_LEN - 1);
+        lights[current_light].name[MAX_NAME_LEN - 1] = '\0';
+        lights[current_light].updated = false;
+    }
+}
+
         }
         else if (current_light >= 0 && current_light < max_lights)
         {
@@ -699,7 +696,7 @@ void update_light_settings(LightSettings *light, const char *dir)
         }
         else if (light->effect == 16)
         {
-
+            fprintf(file2, "000000 ");   // it seems that the first value is not read by the led driver.
             ColorWave(light->progress, &r, &g, &b);
             fprintf(file2, "%02X%02X%02X ", r, g, b);
             fprintf(file2, "%02X%02X%02X ", r, g, b);
@@ -719,6 +716,80 @@ void update_light_settings(LightSettings *light, const char *dir)
             ColorWave(light->progress + 0.4, &r, &g, &b);
             fprintf(file2, "%02X%02X%02X ", r, g, b);
             fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            
+            
+             //////////// same rotation //////////
+        //  ColorWave(light->progress, &r, &g, &b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+        //     ColorWave(light->progress + 0.1, &r, &g, &b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+        //     ColorWave(light->progress + 0.2, &r, &g, &b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+        //     ColorWave(light->progress + 0.3, &r, &g, &b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+        //     ColorWave(light->progress + 0.4, &r, &g, &b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+            
+             //////////// inverted rotation / symetry  //////////
+            ColorWave(light->progress + 0.3, &r, &g, &b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+
+            ColorWave(light->progress + 0.2, &r, &g, &b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+            ColorWave(light->progress + 0.1, &r, &g, &b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+            ColorWave(light->progress, &r, &g, &b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+            ColorWave(light->progress + 0.4, &r, &g, &b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            
+            /////////// inverted position ///////////
+            
+        //        ColorWave(light->progress + 0.4, &r, &g, &b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+        //     ColorWave(light->progress + 0.3, &r, &g, &b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+        //     ColorWave(light->progress + 0.2, &r, &g, &b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+
+        //  ColorWave(light->progress + 0.1, &r, &g, &b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+
+        //     ColorWave(light->progress, &r, &g, &b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+        //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+  
         }
         else if (light->effect == 17)
         {
@@ -810,15 +881,15 @@ bool checkIfEffectChanged(LightSettings *light)
 int main()
 {
 
-    int fd = open("/dev/input/js0", O_RDONLY | O_NONBLOCK);
-    if (fd < 0)
-    {
-        perror("Failed joystick device");
-    }
-    else
-    {
-        jsopen = 1;
-    }
+    // int fd = open("/dev/input/js0", O_RDONLY | O_NONBLOCK);
+    // if (fd < 0)
+    // {
+    //     perror("Failed joystick device");
+    // }
+    // else
+    // {
+    //     jsopen = 1;
+    // }
 
     LightSettings lights[MAX_LIGHTS] = {0};
 
@@ -866,35 +937,35 @@ int main()
         {
             return 1;
         }
+for (int i = 0; i < MAX_LIGHTS; i++)
+{
+    // Check current effect before updating
+    if (checkIfEffectChanged(&lights[i]))
+    {
+        lights[i].updated = true;
+    }
 
-        for (int i = 0; i < MAX_LIGHTS; i++)
+    if (lights[i].updated || first_run || lights[i].effect >= 8)
+    {
+        if (first_run || lights[i].updated)
         {
-            // Check current effect before updating
-            if (checkIfEffectChanged(&lights[i]))
+            int initialColorArray[10] = {lights[i].color, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000};
+            for (int j = 0; j < 8; j++)
             {
-                lights[i].updated = true;
-            }
-
-            if (lights[i].updated || first_run || lights[i].effect >= 8)
-            {
-                if (first_run || lights[i].updated)
-                {
-                    int initialColorArray[10] = {lights[i].color, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000};
-                    for (int j = 0; j < 8; j++)
-                    {
-                        lights[i].colorarray[j] = initialColorArray[j];
-                    }
-                }
-                changebrightness("/sys/class/led_anim", lights);
-                update_light_settings(&lights[i], "/sys/class/led_anim");
-                lights[i].updated = false;
+                lights[i].colorarray[j] = initialColorArray[j];
             }
         }
+        changebrightness("/sys/class/led_anim", lights);
+        update_light_settings(&lights[i], "/sys/class/led_anim");
+        lights[i].updated = false;
+    }
+}
+
 
         first_run = false; // Set to false after the first iteration
         usleep(50000);
     }
-    close(fd);
+    // close(fd);
     printf("Received SIGTERM, exiting color app...\n");
 
     return 0;
