@@ -37,8 +37,8 @@ const char *triggernames[] = {
 
 const char *effect_names[] = {
     "Linear", "Breathe", "Interval Breathe", "Static",
-    "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "dummy"};
+    "Blink 1", "Blink 2", "Blink 3", "Color Drift", "Twinkle",
+    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Rainbow Snake"};
 // const char *topbar_effect_names[] = {
 //     "Linear", "Breathe", "Interval Breathe", "Static",
 //     "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
@@ -52,7 +52,7 @@ int read_settings(const char *filename, LightSettings *lights, int max_lights)
 {
 
     char diskfilename[256];
-    snprintf(diskfilename, sizeof(diskfilename), "/etc/LedControl/%s", filename);
+    snprintf(diskfilename, sizeof(diskfilename), "/mnt/SDCARD/System/etc/%s", filename);
     FILE *file = fopen(diskfilename, "r");
     if (file == NULL)
     {
@@ -133,7 +133,7 @@ int read_settings(const char *filename, LightSettings *lights, int max_lights)
 int save_settings(const char *filename, LightSettings *lights, int max_lights)
 {
     char diskfilename[256];
-    snprintf(diskfilename, sizeof(diskfilename), "/etc/LedControl/%s", filename);
+    snprintf(diskfilename, sizeof(diskfilename), "/mnt/SDCARD/System/etc/%s", filename);
     FILE *file = fopen(diskfilename, "w");
     if (file == NULL)
     {
@@ -141,14 +141,14 @@ int save_settings(const char *filename, LightSettings *lights, int max_lights)
         return 1;
     }
 
-    char shmfile[256];
-    snprintf(shmfile, sizeof(shmfile), "/dev/shm/%s", filename);
-    FILE *shm_file = fopen(shmfile, "w");
-    if (shm_file == NULL)
-    {
-        perror("Unable to open settings file for writing");
-        return 1;
-    }
+    // char shmfile[256];
+    // snprintf(shmfile, sizeof(shmfile), "/dev/shm/%s", filename);
+    // FILE *shm_file = fopen(shmfile, "w");
+    // if (shm_file == NULL)
+    // {
+    //     perror("Unable to open settings file for writing");
+    //     return 1;
+    // }
 
     for (int i = 0; i < max_lights; ++i)
     {
@@ -161,18 +161,18 @@ int save_settings(const char *filename, LightSettings *lights, int max_lights)
         fprintf(file, "brightness=%d\n", lights[i].brightness);
         fprintf(file, "trigger=%d\n\n", lights[i].trigger);
 
-        fprintf(shm_file, "[%s]\n", lights[i].name);
-        fprintf(shm_file, "effect=%d\n", lights[i].effect);
-        fprintf(shm_file, "color=0x%06X\n", lights[i].color);
-        fprintf(shm_file, "color2=0x%06X\n", lights[i].color2);
-        fprintf(shm_file, "duration=%d\n", lights[i].duration);
-        fprintf(shm_file, "maxeffects=%d\n", lights[i].maxeffects);
-        fprintf(shm_file, "brightness=%d\n", lights[i].brightness);
-        fprintf(shm_file, "trigger=%d\n\n", lights[i].trigger);
+        // fprintf(shm_file, "[%s]\n", lights[i].name);
+        // fprintf(shm_file, "effect=%d\n", lights[i].effect);
+        // fprintf(shm_file, "color=0x%06X\n", lights[i].color);
+        // fprintf(shm_file, "color2=0x%06X\n", lights[i].color2);
+        // fprintf(shm_file, "duration=%d\n", lights[i].duration);
+        // fprintf(shm_file, "maxeffects=%d\n", lights[i].maxeffects);
+        // fprintf(shm_file, "brightness=%d\n", lights[i].brightness);
+        // fprintf(shm_file, "trigger=%d\n\n", lights[i].trigger);
     }
 
     fclose(file);
-    fclose(shm_file);
+    // fclose(shm_file);
     return 0;
 }
 
@@ -324,23 +324,24 @@ void handle_light_input(LightSettings *light, SDL_Event *event, int selected_set
             light->duration = (light->duration - 100 + 5000) % 5000; // Decrease duration
         }
         break;
-    case 4: // Brightness (synchronized between Central light and L&R joysticks)
+case 4: // Brightness (synchronisé entre Central light et L&R joysticks)
+{
+    int new_brightness = light->brightness;
+    if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
     {
-        int new_brightness = light->brightness;
-        if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
-        {
-            new_brightness = (new_brightness + 1 > 60) ? 60 : new_brightness + 1;
-        }
-        else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
-        {
-            new_brightness = (new_brightness - 1 < 0) ? 0 : new_brightness - 1;
-        }
-
-        // Apply the same value to both lights
-        lights[0].brightness = new_brightness;
-        lights[1].brightness = new_brightness;
+        new_brightness = (new_brightness + 1 > 60) ? 60 : new_brightness + 1;
     }
-    break;
+    else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
+    {
+        new_brightness = (new_brightness - 1 < 0) ? 0 : new_brightness - 1;
+    }
+
+    // Appliquer la même valeur aux deux lumières
+    lights[0].brightness = new_brightness;
+    lights[1].brightness = new_brightness;
+}
+break;
+
     case 5: // trigger
         if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
         {
@@ -355,7 +356,7 @@ void handle_light_input(LightSettings *light, SDL_Event *event, int selected_set
 
     // Save settings after each change
 
-    save_settings("settings.txt", lights, NUM_OPTIONS);
+    save_settings("led_daemon.conf", lights, NUM_OPTIONS);
 }
 
 
@@ -455,7 +456,7 @@ int main(int argc, char *argv[])
     }
 
     // Read initial settings
-    if (read_settings("settings.txt", lights, NUM_OPTIONS) != 0)
+    if (read_settings("led_daemon.conf", lights, NUM_OPTIONS) != 0)
     {
         TTF_CloseFont(font);
         SDL_DestroyRenderer(renderer);
@@ -691,21 +692,21 @@ SDL_RenderFillRect(renderer, &rect);
                 SDL_Rect rect = {20, 112 + j * 82, text_width + 130, 68};
                 SDL_RenderFillRect(renderer, &rect);
 
-                int cube_x = 30 + text_width + 30;
-                int cube_y = 118 + j * 82;
-                int cube_w = 56;
-                int cube_h = 56;
-                int corner_radius = 10;
+int cube_x = 30 + text_width + 30;
+int cube_y = 118 + j * 82;
+int cube_w = 56;
+int cube_h = 56;
+int corner_radius = 10;
 
-                // Step 1: draw the slightly larger black background
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-                draw_rounded_rect(renderer, cube_x - 1, cube_y - 1, cube_w + 2, cube_h + 2, corner_radius + 1);
+// Étape 1 : dessiner le fond noir, légèrement plus grand
+SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+draw_rounded_rect(renderer, cube_x - 1, cube_y - 1, cube_w + 2, cube_h + 2, corner_radius + 1);
 
 
-                // Step 2: Draw the coloured cube on top
-                SDL_Color color_cube = hex_to_sdl_color(settings_values[j]);
-                SDL_SetRenderDrawColor(renderer, color_cube.r, color_cube.g, color_cube.b, color_cube.a);
-                draw_rounded_rect(renderer, cube_x, cube_y, cube_w, cube_h, corner_radius);
+// Étape 2 : dessiner le cube coloré par-dessus
+SDL_Color color_cube = hex_to_sdl_color(settings_values[j]);
+SDL_SetRenderDrawColor(renderer, color_cube.r, color_cube.g, color_cube.b, color_cube.a);
+draw_rounded_rect(renderer, cube_x, cube_y, cube_w, cube_h, corner_radius);
 
 
                 SDL_FreeSurface(surface);
