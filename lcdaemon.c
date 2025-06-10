@@ -849,26 +849,38 @@ else if (light->effect == 19)
     if (dpad_y < 0)  // haut
     {
         light->colorarray[9] = light->color;
-        light->colorarray[10] = light->color;
+        // light->colorarray[10] = light->color;
         light->colorarray[11] = light->color;
+
+        light->colorarray[20] = light->color;
+        light->colorarray[22] = light->color;
     }
     else if (dpad_y > 0)  // bas
     {
         light->colorarray[4] = light->color;
         light->colorarray[5] = light->color;
+
+        light->colorarray[15] = light->color;
+        light->colorarray[16] = light->color;
     }
 
     if (dpad_x < 0)  // gauche
     {
         light->colorarray[1] = light->color;
-        light->colorarray[2] = light->color;
+        // light->colorarray[2] = light->color;
         light->colorarray[3] = light->color;
+
+        light->colorarray[12] = light->color;
+        light->colorarray[14] = light->color;
     }
     else if (dpad_x > 0)  // droite
     {
-        light->colorarray[12] = light->color;
-        light->colorarray[13] = light->color;
-        light->colorarray[14] = light->color;
+        light->colorarray[6] = light->color;
+        // light->colorarray[13] = light->color;
+        light->colorarray[8] = light->color;
+
+        light->colorarray[17] = light->color;
+        light->colorarray[19] = light->color;
     }
 
     for (int j = 0; j < LED_COUNT; j++)
