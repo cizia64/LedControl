@@ -405,7 +405,7 @@ char *read_effect_description(const char *effect_name) {
     memset(buffer, 0, sizeof(buffer));
 
     char path[256];
-    snprintf(path, sizeof(path), "/mnt/SDCARD/System/led_effect_desc/%s.txt", effect_name);
+    snprintf(path, sizeof(path), "./effect_desc/%s.txt", effect_name);
 
     FILE *f = fopen(path, "r");
     if (!f) {
@@ -875,8 +875,8 @@ char *description = read_effect_description(effect_name);
 
 // Cadre à droite
 int box_x = window_width / 2 + 20;
-int box_y = 120;
-int box_w = window_width / 2 - 40;
+int box_y = 93;
+int box_w = window_width / 2 - 60;
 int box_h = window_height - 200;
 
 SDL_Rect desc_box = {box_x, box_y, box_w, box_h};
