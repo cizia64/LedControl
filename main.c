@@ -38,7 +38,7 @@ const char *triggernames[] = {
 const char *effect_names[] = {
     "Linear", "Breathe", "Interval Breathe", "Static",
     "Blink 1", "Blink 2", "Blink 3", "Color Drift", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Rainbow Snake"};
+    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Rainbow Snake", "Rotation", "Rotation"};
 // const char *topbar_effect_names[] = {
 //     "Linear", "Breathe", "Interval Breathe", "Static",
 //     "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
