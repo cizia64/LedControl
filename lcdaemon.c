@@ -49,6 +49,10 @@ int current_r;
 int current_g;
 int current_b;
 
+int dpad_x = 0;
+int dpad_y = 0;
+
+
 volatile sig_atomic_t running = 1;
 
 int jsopen = 0; // Flag to keep track of whether the file is open
@@ -150,21 +154,21 @@ void changebrightness(const char *dir, const LightSettings *lights)
     if (file != NULL)
     {
         fprintf(file, "%d\n", lights[0].brightness);
-        fprintf(file, "%d\n", lights[1].brightness);
+        // fprintf(file, "%d\n", lights[1].brightness);
         fclose(file);
     }
     chmodfile(filepath, 0);
 
     // Joysticks gauche+droite [lr] → lights[1]
-    // snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
-    // chmodfile(filepath, 1);
-    // file = fopen(filepath, "w");
-    // if (file != NULL)
-    // {
-    //     fprintf(file, "%d\n", lights[1].brightness);
-    //     fclose(file);
-    // }
-    // chmodfile(filepath, 0);
+    snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
+    chmodfile(filepath, 1);
+    file = fopen(filepath, "w");
+    if (file != NULL)
+    {
+        fprintf(file, "%d\n", lights[1].brightness);
+        fclose(file);
+    }
+    chmodfile(filepath, 0);
 }
 
 void handle_sigterm(int sig)
@@ -827,11 +831,55 @@ static int current_i = 1; // Commence à 1, car 0 est réservé
     if (current_i >= 12) {
         current_i = 1;
     }
-
-
-
-            
         }
+
+
+else if (light->effect == 19)
+{
+    // LEDs pour chaque direction du D-pad
+    // Gauche : 1 2 3
+    // Droite : 12 13 14
+    // Haut   : 9 10 11
+    // Bas    : 4 5
+
+    int LED_COUNT = 23;
+    for (int j = 0; j < LED_COUNT; j++)
+        light->colorarray[j] = 0x000000;
+
+    if (dpad_y < 0)  // haut
+    {
+        light->colorarray[9] = light->color;
+        light->colorarray[10] = light->color;
+        light->colorarray[11] = light->color;
+    }
+    else if (dpad_y > 0)  // bas
+    {
+        light->colorarray[4] = light->color;
+        light->colorarray[5] = light->color;
+    }
+
+    if (dpad_x < 0)  // gauche
+    {
+        light->colorarray[1] = light->color;
+        light->colorarray[2] = light->color;
+        light->colorarray[3] = light->color;
+    }
+    else if (dpad_x > 0)  // droite
+    {
+        light->colorarray[12] = light->color;
+        light->colorarray[13] = light->color;
+        light->colorarray[14] = light->color;
+    }
+
+    for (int j = 0; j < LED_COUNT; j++)
+    {
+        fprintf(file2, "%06X ", light->colorarray[j]);
+    }
+}
+
+
+
+
         else
         {
             fprintf(file, "%06X\n", light->color);
@@ -948,21 +996,29 @@ int main()
         }
 
         struct js_event event;
-        if (read(fd, &event, sizeof(event)) > 0)
+if (read(fd, &event, sizeof(event)) > 0)
+{
+    if (event.type == JS_EVENT_BUTTON)
+    {
+        pressed = event.value ? true : false;
+        last_pressed = event.number;
+    }
+    else if (event.type == JS_EVENT_AXIS)
+    {
+        last_pressed = 100;
+        // Hat0X (gauche/droite)
+        if (event.number == 6)
         {
-            if (event.type == JS_EVENT_AXIS || event.type == JS_EVENT_BUTTON)
-            {
-                pressed = event.value ? true : false;
-                if (event.type == JS_EVENT_BUTTON)
-                {
-                    last_pressed = event.number;
-                }
-                else
-                {
-                    last_pressed = 100;
-                }
-            }
+            dpad_x = event.value;
         }
+        // Hat0Y (haut/bas)
+        else if (event.number == 7)
+        {
+            dpad_y = event.value;
+        }
+    }
+}
+
 
         if (read_settings("led_daemon.conf", lights, MAX_LIGHTS) != 0)
         {
