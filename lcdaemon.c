@@ -52,7 +52,6 @@ int current_b;
 int dpad_x = 0;
 int dpad_y = 0;
 
-
 volatile sig_atomic_t running = 1;
 
 int jsopen = 0; // Flag to keep track of whether the file is open
@@ -146,7 +145,7 @@ void changebrightness(const char *dir, const LightSettings *lights)
     char filepath[256];
     FILE *file;
 
-    // LED centrale [m] → lights[0]
+    // central LED [m] → lights[0]
     // only one global brightness value for all leds on TSP
     snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
     chmodfile(filepath, 1);
@@ -159,7 +158,7 @@ void changebrightness(const char *dir, const LightSettings *lights)
     }
     chmodfile(filepath, 0);
 
-    // Joysticks gauche+droite [lr] → lights[1]
+    // Left+right joysticks [lr] → lights[1]
     snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
     chmodfile(filepath, 1);
     file = fopen(filepath, "w");
@@ -215,7 +214,7 @@ int read_settings(const char *filename, LightSettings *lights, int max_lights)
                 else if (strcmp(light_name, "lr") == 0)
                     current_light = 1;
                 else
-                    current_light = -1; // ignore les autres
+                    current_light = -1; // ignores others
 
                 if (current_light != -1)
                 {
@@ -555,43 +554,43 @@ void update_light_settings(LightSettings *light, const char *dir)
     {
         SDL_Color tempcolor = HexIntToColor(light->color);
         int r, g, b;
-        if (light->effect == 8)
+        if (light->effect == 8) // Color drift
         {
             ColorWave(light->progress, &r, &g, &b);
             fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
 
-        else if (light->effect == 9)
+        else if (light->effect == 9) // TwinkleEffect
         {
             TwinkleEffect(light->progress, tempcolor.r, tempcolor.g, tempcolor.b, &r, &g, &b);
             fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
-        else if (light->effect == 10)
+        else if (light->effect == 10) // FireEffect
         {
             FireEffect(light->progress, &r, &g, &b);
             fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
-        else if (light->effect == 11)
+        else if (light->effect == 11) // GlitterEffect
         {
             GlitterEffect(light->progress, tempcolor.r, tempcolor.g, tempcolor.b, &r, &g, &b);
             fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
-        else if (light->effect == 12)
+        else if (light->effect == 12) // NeonGlowEffect
         {
             NeonGlowEffect(light->progress, tempcolor.r, tempcolor.g, tempcolor.b, &r, &g, &b);
             fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
-        else if (light->effect == 13)
+        else if (light->effect == 13) // FireEffect
         {
             FireflyEffect(light->progress, tempcolor.r, tempcolor.g, tempcolor.b, &r, &g, &b);
             fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
-        else if (light->effect == 14)
+        else if (light->effect == 14) // Aurora
         {
             AuroraEffect(light->progress, &r, &g, &b);
             fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
-        else if (light->effect == 15)
+        else if (light->effect == 15) // reactive
         {
             printf("pressed: %d, trigger setting: %d\n", pressed, light->trigger);
             if (pressed)
@@ -667,19 +666,17 @@ void update_light_settings(LightSettings *light, const char *dir)
             }
         }
 
-        
+        if (light->effect == 16) // Nothing
+        {
+            // Do nothing: leave it to another external process
+            fclose(file);
+            fclose(file2);
 
-if (light->effect == 16)
-{
-    // Ne rien faire : on laisse la main à un autre processus externe
-    fclose(file);
-    fclose(file2);
-
-    // chmodfile(filepath, 0);
-    // chmodfile(filepath2, 0);
-    return;
-}
-        else if (light->effect == 17)
+            // chmodfile(filepath, 0);
+            // chmodfile(filepath2, 0);
+            return;
+        }
+        else if (light->effect == 17) // Rainbow Snake
         {
             fprintf(file2, "000000 ");
             ColorWave(light->progress, &r, &g, &b);
@@ -695,6 +692,28 @@ if (light->effect == 16)
             fprintf(file2, "%02X%02X%02X ", r, g, b);
 
             ColorWave(light->progress + 0.3, &r, &g, &b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+            ColorWave(light->progress + 0.4, &r, &g, &b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+            //////////// mirror rotation / symetry  //////////
+            ColorWave(light->progress + 0.3, &r, &g, &b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+            ColorWave(light->progress + 0.2, &r, &g, &b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+            ColorWave(light->progress + 0.1, &r, &g, &b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file2, "%02X%02X%02X ", r, g, b);
+
+            ColorWave(light->progress, &r, &g, &b);
             fprintf(file2, "%02X%02X%02X ", r, g, b);
             fprintf(file2, "%02X%02X%02X ", r, g, b);
 
@@ -725,31 +744,9 @@ if (light->effect == 16)
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
 
-            //////////// mirror rotation / symetry  //////////
-            ColorWave(light->progress + 0.3, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-
-            ColorWave(light->progress + 0.2, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-
-            ColorWave(light->progress + 0.1, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-
-            ColorWave(light->progress, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-
-            ColorWave(light->progress + 0.4, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-
             /////////// inverted position ///////////
 
-            //        ColorWave(light->progress + 0.4, &r, &g, &b);
+            //     ColorWave(light->progress + 0.4, &r, &g, &b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
 
@@ -761,7 +758,7 @@ if (light->effect == 16)
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
 
-            //  ColorWave(light->progress + 0.1, &r, &g, &b);
+            //     ColorWave(light->progress + 0.1, &r, &g, &b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
 
@@ -769,154 +766,120 @@ if (light->effect == 16)
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
         }
-         else if (light->effect == 18)
+        else if (light->effect == 18)
         {
-int LED_COUNT = 23; // Valeurs réelles utilisées
-// static int current_i = 1; // Commence à 1, car 0 est réservé
+            int LED_COUNT = 23;
+            // static int current_i = 1; // Starts at 1, because 0 is reserved
 
-int current_i = ((int)(light->progress * 11.0f)) % 11 + 1;   // use speed instead of standard increment
+            int current_i = ((int)(light->progress * 11.0f)) % 11 + 1; // use speed instead of standard increment
 
-    // Tout à zéro
-    for (int j = 0; j < LED_COUNT; j++) {
-        light->colorarray[j] = 0x000000;
-    }
+            // Every leds to black
+            for (int j = 0; j < LED_COUNT; j++)
+            {
+                light->colorarray[j] = 0x000000;
+            }
 
-    // Ne jamais toucher colorarray[0]
-    if (current_i < 12) {
-        light->colorarray[current_i] = light->color;         // bande gauche (1 à 11)
-        light->colorarray[current_i + 11] = light->color;    // bande droite (12 à 22)
-    }
+            // Never touch colorarray[0].
+            if (current_i < 12)
+            {
+                light->colorarray[current_i] = light->color;      // left stick (1 to 11)
+                light->colorarray[current_i + 11] = light->color; // right stick (12 to 22)
+            }
 
-    // Affichage
-    for (int j = 0; j < LED_COUNT; j++) {
-        fprintf(file2, "%06X ", light->colorarray[j]);
-    }
-
-    // Avance
-    // current_i++;
-    // if (current_i >= 12) {
-    //     current_i = 1;
-    // }
-
-
-
-
+            // Display
+            for (int j = 0; j < LED_COUNT; j++)
+            {
+                fprintf(file2, "%06X ", light->colorarray[j]);
+            }
         }
         else if (light->effect == 19)
         {
 
-            int LED_COUNT = 23;       // Valeurs réelles utilisées
-            // static int current_i = 1; // Commence à 1, car 0 est réservé
+            int LED_COUNT = 23;
+            // static int current_i = 1; // Starts at 1, because 0 is reserved
             int current_i = ((int)(light->progress * 11.0f)) % 11 + 1; // use speed instead of standard increment
 
+            // Required offset between the two rotating LEDs
+            int offset = 7; // 1 -> opposite
 
+            // Resets everything to black
+            for (int j = 0; j < LED_COUNT; j++)
+            {
+                light->colorarray[j] = 0x000000;
+            }
 
-                // Décalage voulu entre les deux LEDs
-                int offset = 7; // 1 -> opposite
+            // Index calculation for opposite LED with offset
+            int opposite_i = 23 - current_i + offset;
 
+            // Clamp to stay within valid limits [12..22]
+            if (opposite_i >= LED_COUNT)
+                opposite_i -= 11; // loops back to [12..22].
+            if (opposite_i < 12)
+                opposite_i += 11;
 
-                    // Réinitialise tout à noir
-                    for (int j = 0; j < LED_COUNT; j++)
-                    {
-                        light->colorarray[j] = 0x000000;
-                    }
+            // Apply colors
+            if (current_i < 12)
+            {
+                light->colorarray[current_i] = light->color;
+                light->colorarray[opposite_i] = light->color;
+            }
 
-                    // Calcul de l’index pour la LED opposée avec décalage
-                    int opposite_i = 23 - current_i + offset;
-
-                    // Clamp pour rester dans les limites valides [12..22]
-                    if (opposite_i >= LED_COUNT)
-                        opposite_i -= 11; // reboucle dans [12..22]
-                    if (opposite_i < 12)
-                        opposite_i += 11;
-
-                    // Applique les couleurs
-                    if (current_i < 12)
-                    {
-                        light->colorarray[current_i] = light->color;
-                        light->colorarray[opposite_i] = light->color;
-                    }
-
-                    // Affiche
-                    for (int j = 0; j < LED_COUNT; j++)
-                    {
-                        fprintf(file2, "%06X ", light->colorarray[j]);
-                    }
-
-                    // Avance
-                    // current_i++;
-                    // if (current_i >= 12)
-                    // {
-                    //     current_i = 1;
-                    // }
-                
-            
+            // Display
+            for (int j = 0; j < LED_COUNT; j++)
+            {
+                fprintf(file2, "%06X ", light->colorarray[j]);
+            }
         }
-         
 
+        else if (light->effect == 20)
+        {
 
-else if (light->effect == 20)
-{
-    // LEDs pour chaque direction du D-pad
-    // Gauche : 1 2 3
-    // Droite : 12 13 14
-    // Haut   : 9 10 11
-    // Bas    : 4 5
+            int LED_COUNT = 23;
+            for (int j = 0; j < LED_COUNT; j++)
+                light->colorarray[j] = 0x000000;
 
-    int LED_COUNT = 23;
-    for (int j = 0; j < LED_COUNT; j++)
-        light->colorarray[j] = 0x000000;
+            if (dpad_y < 0) // Up
+            {
+                light->colorarray[9] = light->color;
+                // light->colorarray[10] = light->color;
+                light->colorarray[11] = light->color;
 
-    if (dpad_y < 0)  // haut
-    {
-        light->colorarray[9] = light->color;
-        // light->colorarray[10] = light->color;
-        light->colorarray[11] = light->color;
+                light->colorarray[20] = light->color;
+                light->colorarray[22] = light->color;
+            }
+            else if (dpad_y > 0) // Down
+            {
+                light->colorarray[4] = light->color;
+                light->colorarray[5] = light->color;
 
-        light->colorarray[20] = light->color;
-        light->colorarray[22] = light->color;
-    }
-    else if (dpad_y > 0)  // bas
-    {
-        light->colorarray[4] = light->color;
-        light->colorarray[5] = light->color;
+                light->colorarray[15] = light->color;
+                light->colorarray[16] = light->color;
+            }
 
-        light->colorarray[15] = light->color;
-        light->colorarray[16] = light->color;
-    }
+            if (dpad_x < 0) // Left
+            {
+                light->colorarray[1] = light->color;
+                // light->colorarray[2] = light->color;
+                light->colorarray[3] = light->color;
 
-    if (dpad_x < 0)  // gauche
-    {
-        light->colorarray[1] = light->color;
-        // light->colorarray[2] = light->color;
-        light->colorarray[3] = light->color;
+                light->colorarray[12] = light->color;
+                light->colorarray[14] = light->color;
+            }
+            else if (dpad_x > 0) // Right
+            {
+                light->colorarray[6] = light->color;
+                // light->colorarray[13] = light->color;
+                light->colorarray[8] = light->color;
 
-        light->colorarray[12] = light->color;
-        light->colorarray[14] = light->color;
-    }
-    else if (dpad_x > 0)  // droite
-    {
-        light->colorarray[6] = light->color;
-        // light->colorarray[13] = light->color;
-        light->colorarray[8] = light->color;
+                light->colorarray[17] = light->color;
+                light->colorarray[19] = light->color;
+            }
 
-        light->colorarray[17] = light->color;
-        light->colorarray[19] = light->color;
-    }
-
-    for (int j = 0; j < LED_COUNT; j++)
-    {
-        fprintf(file2, "%06X ", light->colorarray[j]);
-    }
-}
-
-
-
-
-
-
-
-
+            for (int j = 0; j < LED_COUNT; j++)
+            {
+                fprintf(file2, "%06X ", light->colorarray[j]);
+            }
+        }
 
         else
         {
@@ -1034,45 +997,39 @@ int main()
         }
 
         struct js_event event;
-if (read(fd, &event, sizeof(event)) > 0)
-{
-    if (event.type == JS_EVENT_BUTTON)
-    {
-        pressed = event.value ? true : false;
-        last_pressed = event.number;
-    }
-    else if (event.type == JS_EVENT_AXIS)
-    {
-        last_pressed = 100;
-        // Hat0X (gauche/droite)
-        if (event.number == 6)
+        if (read(fd, &event, sizeof(event)) > 0)
         {
-            dpad_x = event.value;
+            if (event.type == JS_EVENT_BUTTON)
+            {
+                pressed = event.value ? true : false;
+                last_pressed = event.number;
+            }
+            else if (event.type == JS_EVENT_AXIS)
+            {
+                last_pressed = 100;
+                // Hat0X (left/right)
+                if (event.number == 6)
+                {
+                    dpad_x = event.value;
+                }
+                // Hat0Y (up/down)
+                else if (event.number == 7)
+                {
+                    dpad_y = event.value;
+                }
+            }
         }
-        // Hat0Y (haut/bas)
-        else if (event.number == 7)
+
+        if (access("/tmp/led_deamon_live", F_OK) == 0)
         {
-            dpad_y = event.value;
+            if (read_settings("led_daemon.conf", lights, MAX_LIGHTS) != 0)
+            {
+                return 1;
+            }
         }
-    }
-}
-
-
-
-if (access("/tmp/led_deamon_live", F_OK) == 0)
-{
-    if (read_settings("led_daemon.conf", lights, MAX_LIGHTS) != 0)
-    {
-        return 1;
-    }
-}
 
         for (int i = 0; i < MAX_LIGHTS; i++)
         {
-            // Ne traiter que les lumières 0 et 1
-            // if (i != 0 && i != 1)
-            //     continue;
-
             // Check current effect before updating
             if (checkIfEffectChanged(&lights[i]))
             {

@@ -33,20 +33,12 @@ const char *lightnames[] = {
     "Central light", "L&R joysticks"};
 #define NROF_TRIGGERS 12
 const char *triggernames[] = {
-    "B", "A", "Y", "X", "L", "R",  "SELECT", "START","MENU", "ALL", "LR", "DPAD"};
+    "B", "A", "Y", "X", "L", "R", "SELECT", "START", "MENU", "ALL", "LR", "DPAD"};
 
 const char *effect_names[] = {
     "Linear", "Breathe", "Interval Breathe", "Static",
     "Blink 1", "Blink 2", "Blink 3", "Color Drift", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Nothing", "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"} ;
-// const char *topbar_effect_names[] = {
-//     "Linear", "Breathe", "Interval Breathe", "Static",
-//     "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
-//     "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Topbar Rainbow", "Topbar night"};
-// const char *lr_effect_names[] = {
-//     "Linear", "Breathe", "Interval Breathe", "Static",
-//     "Blink 1", "Blink 2", "Blink 3", "Rainbow", "Twinkle",
-//     "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "LR Rainbow", "LR Reactive"};
+    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Nothing", "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"};
 
 int read_settings(const char *filename, LightSettings *lights, int max_lights)
 {
@@ -141,15 +133,6 @@ int save_settings(const char *filename, LightSettings *lights, int max_lights)
         return 1;
     }
 
-    // char shmfile[256];
-    // snprintf(shmfile, sizeof(shmfile), "/dev/shm/%s", filename);
-    // FILE *shm_file = fopen(shmfile, "w");
-    // if (shm_file == NULL)
-    // {
-    //     perror("Unable to open settings file for writing");
-    //     return 1;
-    // }
-
     for (int i = 0; i < max_lights; ++i)
     {
         fprintf(file, "[%s]\n", lights[i].name);
@@ -160,19 +143,9 @@ int save_settings(const char *filename, LightSettings *lights, int max_lights)
         fprintf(file, "maxeffects=%d\n", lights[i].maxeffects);
         fprintf(file, "brightness=%d\n", lights[i].brightness);
         fprintf(file, "trigger=%d\n\n", lights[i].trigger);
-
-        // fprintf(shm_file, "[%s]\n", lights[i].name);
-        // fprintf(shm_file, "effect=%d\n", lights[i].effect);
-        // fprintf(shm_file, "color=0x%06X\n", lights[i].color);
-        // fprintf(shm_file, "color2=0x%06X\n", lights[i].color2);
-        // fprintf(shm_file, "duration=%d\n", lights[i].duration);
-        // fprintf(shm_file, "maxeffects=%d\n", lights[i].maxeffects);
-        // fprintf(shm_file, "brightness=%d\n", lights[i].brightness);
-        // fprintf(shm_file, "trigger=%d\n\n", lights[i].trigger);
     }
 
     fclose(file);
-    // fclose(shm_file);
     return 0;
 }
 
@@ -324,23 +297,23 @@ void handle_light_input(LightSettings *light, SDL_Event *event, int selected_set
             light->duration = (light->duration - 100 + 5000) % 5000; // Decrease duration
         }
         break;
-case 4: // Brightness (synchronisé entre Central light et L&R joysticks)
-{
-    int new_brightness = light->brightness;
-    if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
+    case 4: // Brightness (synchronized between Central light and L&R joysticks)
     {
-        new_brightness = (new_brightness + 1 > 60) ? 60 : new_brightness + 1;
-    }
-    else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
-    {
-        new_brightness = (new_brightness - 1 < 0) ? 0 : new_brightness - 1;
-    }
+        int new_brightness = light->brightness;
+        if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
+        {
+            new_brightness = (new_brightness + 1 > 60) ? 60 : new_brightness + 1;
+        }
+        else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
+        {
+            new_brightness = (new_brightness - 1 < 0) ? 0 : new_brightness - 1;
+        }
 
-    // Appliquer la même valeur aux deux lumières
-    lights[0].brightness = new_brightness;
-    lights[1].brightness = new_brightness;
-}
-break;
+        // Apply the same value to both lights
+        lights[0].brightness = new_brightness;
+        lights[1].brightness = new_brightness;
+    }
+    break;
 
     case 5: // trigger
         if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
@@ -358,8 +331,6 @@ break;
 
     save_settings("led_daemon.conf", lights, NUM_OPTIONS);
 }
-
-
 
 void draw_filled_circle(SDL_Renderer *renderer, int x, int y, int radius)
 {
@@ -399,8 +370,8 @@ void draw_rounded_rect(SDL_Renderer *renderer, int x, int y, int w, int h, int r
 
 char last_button_pressed[50] = "None";
 
-
-char *read_effect_description(const char *effect_name) {
+char *read_effect_description(const char *effect_name)
+{
     static char buffer[1024];
     memset(buffer, 0, sizeof(buffer));
 
@@ -408,7 +379,8 @@ char *read_effect_description(const char *effect_name) {
     snprintf(path, sizeof(path), "./effect_desc/%s.txt", effect_name);
 
     FILE *f = fopen(path, "r");
-    if (!f) {
+    if (!f)
+    {
         snprintf(buffer, sizeof(buffer), "No description available.");
         return buffer;
     }
@@ -417,10 +389,6 @@ char *read_effect_description(const char *effect_name) {
     fclose(f);
     return buffer;
 }
-
-
-
-
 
 int main(int argc, char *argv[])
 {
@@ -612,45 +580,41 @@ int main(int argc, char *argv[])
 
         // Display light name
         char light_name_text[256];
-// Mettre le texte en gras
-TTF_SetFontStyle(font, TTF_STYLE_BOLD);
+        TTF_SetFontStyle(font, TTF_STYLE_BOLD);
 
-// Générer le texte
-snprintf(light_name_text, sizeof(light_name_text), "%s", lights[selected_light].friendlyname);
-SDL_Surface *surface = TTF_RenderText_Blended(font, light_name_text, color);
-SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+        // Générer le texte
+        snprintf(light_name_text, sizeof(light_name_text), "%s", lights[selected_light].friendlyname);
+        SDL_Surface *surface = TTF_RenderText_Blended(font, light_name_text, color);
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
 
-int text_width = surface->w;
-int text_height = surface->h;
-SDL_FreeSurface(surface);
+        int text_width = surface->w;
+        int text_height = surface->h;
+        SDL_FreeSurface(surface);
 
-// Coordonnées centrées pour le texte
-int center_x = (window_width - text_width) / 2;
-int center_y = 30;
+        // Centered coordinates for text
+        int center_x = (window_width - text_width) / 2;
+        int center_y = 30;
 
-// Rectangle de fond : pleine largeur, ajusté en hauteur
-SDL_Rect bg_rect = {
-    .x = 0,
-    .y = center_y - 5,
-    .w = window_width,
-    .h = text_height + 10
-};
-SDL_SetRenderDrawColor(renderer, 64, 64, 64, 255); // Gris foncé
-SDL_RenderFillRect(renderer, &bg_rect);
+        // Background rectangle: full width, height-adjusted
+        SDL_Rect bg_rect = {
+            .x = 0,
+            .y = center_y - 5,
+            .w = window_width,
+            .h = text_height + 10};
+        SDL_SetRenderDrawColor(renderer, 64, 64, 64, 255); // Dark grey
+        SDL_RenderFillRect(renderer, &bg_rect);
 
-// Affichage du texte centré
-SDL_Rect dstrect = {
-    .x = center_x,
-    .y = center_y,
-    .w = text_width,
-    .h = text_height
-};
-SDL_RenderCopy(renderer, texture, NULL, &dstrect);
-SDL_DestroyTexture(texture);
+        // Display centered text
+        SDL_Rect dstrect = {
+            .x = center_x,
+            .y = center_y,
+            .w = text_width,
+            .h = text_height};
+        SDL_RenderCopy(renderer, texture, NULL, &dstrect);
+        SDL_DestroyTexture(texture);
 
-// Réinitialiser le style
-TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
-
+        // Reset style
+        TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
 
         // Display settings
         const char *settings_labels[6] = {"Effect", "Color1", "Color2", "Speed", "Brightness", "Trigger"};
@@ -671,13 +635,12 @@ TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
 
             if (j == 0)
             { // Display effect name instead of number
-                // snprintf(setting_text, sizeof(setting_text), "%s: %s", settings_labels[j], selected_light == 3 ? lr_effect_names[settings_values[j] - 1] : selected_light == 2 ? topbar_effect_names[settings_values[j] - 1]
-                //                                                                                                                                                                : effect_names[settings_values[j] - 1]);
+              // snprintf(setting_text, sizeof(setting_text), "%s: %s", settings_labels[j], selected_light == 3 ? lr_effect_names[settings_values[j] - 1] : selected_light == 2 ? topbar_effect_names[settings_values[j] - 1]
+              //                                                                                                                                                                : effect_names[settings_values[j] - 1]);
 
-
-snprintf(setting_text, sizeof(setting_text), "%s: %s",
-         settings_labels[j],
-         effect_names[settings_values[j] - 1]);
+                snprintf(setting_text, sizeof(setting_text), "%s: %s",
+                         settings_labels[j],
+                         effect_names[settings_values[j] - 1]);
 
                 // Render the effect name
                 SDL_Color current_color = (j == selected_setting) ? highlight_color : color;
@@ -690,7 +653,7 @@ snprintf(setting_text, sizeof(setting_text), "%s: %s",
 
                 SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
                 SDL_Rect rect = {20, 112, text_width + 60, 68};
-SDL_RenderFillRect(renderer, &rect);
+                SDL_RenderFillRect(renderer, &rect);
 
                 SDL_FreeSurface(surface);
 
@@ -715,22 +678,20 @@ SDL_RenderFillRect(renderer, &rect);
                 SDL_Rect rect = {20, 112 + j * 82, text_width + 130, 68};
                 SDL_RenderFillRect(renderer, &rect);
 
-int cube_x = 30 + text_width + 30;
-int cube_y = 118 + j * 82;
-int cube_w = 56;
-int cube_h = 56;
-int corner_radius = 10;
+                int cube_x = 30 + text_width + 30;
+                int cube_y = 118 + j * 82;
+                int cube_w = 56;
+                int cube_h = 56;
+                int corner_radius = 10;
 
-// Étape 1 : dessiner le fond noir, légèrement plus grand
-SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-draw_rounded_rect(renderer, cube_x - 1, cube_y - 1, cube_w + 2, cube_h + 2, corner_radius + 1);
+                // Step 1: draw the slightly larger black background
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                draw_rounded_rect(renderer, cube_x - 1, cube_y - 1, cube_w + 2, cube_h + 2, corner_radius + 1);
 
-
-// Étape 2 : dessiner le cube coloré par-dessus
-SDL_Color color_cube = hex_to_sdl_color(settings_values[j]);
-SDL_SetRenderDrawColor(renderer, color_cube.r, color_cube.g, color_cube.b, color_cube.a);
-draw_rounded_rect(renderer, cube_x, cube_y, cube_w, cube_h, corner_radius);
-
+                // Step 2: Draw the coloured cube on top
+                SDL_Color color_cube = hex_to_sdl_color(settings_values[j]);
+                SDL_SetRenderDrawColor(renderer, color_cube.r, color_cube.g, color_cube.b, color_cube.a);
+                draw_rounded_rect(renderer, cube_x, cube_y, cube_w, cube_h, corner_radius);
 
                 SDL_FreeSurface(surface);
 
@@ -777,7 +738,7 @@ draw_rounded_rect(renderer, cube_x, cube_y, cube_w, cube_h, corner_radius);
                 SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
                 // draw_rounded_rect(renderer, 20, 112 + j * 82, text_width + 60, 68, 30);
                 SDL_Rect rect = {20, 112 + j * 82, text_width + 60, 68};
-SDL_RenderFillRect(renderer, &rect);
+                SDL_RenderFillRect(renderer, &rect);
                 SDL_FreeSurface(surface);
 
                 // Calculate centered position
@@ -829,7 +790,7 @@ SDL_RenderFillRect(renderer, &rect);
         // draw_rounded_rect(renderer, window_width - 180, window_height - 80, 60, 60, 30);
         // SDL_Rect rect = {window_width - 180, window_height - 80, 60, 60};
         rect = (SDL_Rect){window_width - 180, window_height - 85, 60, 60};
-        
+
         SDL_RenderFillRect(renderer, &rect);
 
         snprintf(button_text, sizeof(button_text), "B");
@@ -865,49 +826,43 @@ SDL_RenderFillRect(renderer, &rect);
         // SDL_DestroyTexture(texture);
         // SDL_FreeSurface(surface);
 
+        // =========== Display effect description ===========
+        int effect_index = lights[selected_light].effect - 1;
+        const char *effect_name = effect_names[effect_index];
+        char *description = read_effect_description(effect_name);
 
+        // Frame on right
+        int box_x = window_width / 2 + 20;
+        int box_y = 93;
+        int box_w = window_width / 2 - 60;
+        int box_h = window_height - 200;
 
+        SDL_Rect desc_box = {box_x, box_y, box_w, box_h};
+        SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
+        SDL_RenderFillRect(renderer, &desc_box);
 
-// === Affichage de la description de l'effet ===
-int effect_index = lights[selected_light].effect - 1;
-const char *effect_name = effect_names[effect_index];
-char *description = read_effect_description(effect_name);
+        // Multiline text
+        int line_height = 36;
+        int max_lines = box_h / line_height;
+        char *line = strtok(description, "\n");
+        int line_num = 0;
 
-// Cadre à droite
-int box_x = window_width / 2 + 20;
-int box_y = 93;
-int box_w = window_width / 2 - 60;
-int box_h = window_height - 200;
-
-SDL_Rect desc_box = {box_x, box_y, box_w, box_h};
-SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
-SDL_RenderFillRect(renderer, &desc_box);
-
-// Texte multiligne
-int line_height = 36;
-int max_lines = box_h / line_height;
-char *line = strtok(description, "\n");
-int line_num = 0;
-
-while (line && line_num < max_lines) {
-    SDL_Surface *line_surface = TTF_RenderText_Blended(fontsm, line, (SDL_Color){255, 255, 255, 255});
-    SDL_Texture *line_texture = SDL_CreateTextureFromSurface(renderer, line_surface);
-    SDL_Rect line_dst = {
-        .x = box_x + 10,
-        .y = box_y + 10 + line_num * line_height,
-        .w = line_surface->w,
-        .h = line_surface->h
-    };
-    SDL_RenderCopy(renderer, line_texture, NULL, &line_dst);
-    SDL_DestroyTexture(line_texture);
-    SDL_FreeSurface(line_surface);
-    line = strtok(NULL, "\n");
-    line_num++;
-}
-// ===========Fin Affichage de la description de l'effet ====================
-
-
-
+        while (line && line_num < max_lines)
+        {
+            SDL_Surface *line_surface = TTF_RenderText_Blended(fontsm, line, (SDL_Color){255, 255, 255, 255});
+            SDL_Texture *line_texture = SDL_CreateTextureFromSurface(renderer, line_surface);
+            SDL_Rect line_dst = {
+                .x = box_x + 10,
+                .y = box_y + 10 + line_num * line_height,
+                .w = line_surface->w,
+                .h = line_surface->h};
+            SDL_RenderCopy(renderer, line_texture, NULL, &line_dst);
+            SDL_DestroyTexture(line_texture);
+            SDL_FreeSurface(line_surface);
+            line = strtok(NULL, "\n");
+            line_num++;
+        }
+        // =========== End Displays the effect description ===========
 
         SDL_RenderPresent(renderer);
     }
