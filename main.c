@@ -324,16 +324,23 @@ void handle_light_input(LightSettings *light, SDL_Event *event, int selected_set
             light->duration = (light->duration - 100 + 5000) % 5000; // Decrease duration
         }
         break;
-    case 4: // Brightness
+    case 4: // Brightness (synchronized between Central light and L&R joysticks)
+    {
+        int new_brightness = light->brightness;
         if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
         {
-            light->brightness = (light->brightness + 5) % 105; // Increase duration
+            new_brightness = (new_brightness + 1 > 60) ? 60 : new_brightness + 1;
         }
         else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
         {
-            light->brightness = (light->brightness - 5 + 105) % 105; // Decrease duration
+            new_brightness = (new_brightness - 1 < 0) ? 0 : new_brightness - 1;
         }
-        break;
+
+        // Apply the same value to both lights
+        lights[0].brightness = new_brightness;
+        lights[1].brightness = new_brightness;
+    }
+    break;
     case 5: // trigger
         if (event->key.keysym.sym == SDLK_RIGHT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
         {
@@ -350,6 +357,8 @@ void handle_light_input(LightSettings *light, SDL_Event *event, int selected_set
 
     save_settings("settings.txt", lights, NUM_OPTIONS);
 }
+
+
 
 void draw_filled_circle(SDL_Renderer *renderer, int x, int y, int radius)
 {
