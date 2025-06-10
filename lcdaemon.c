@@ -772,8 +772,9 @@ if (light->effect == 16)
          else if (light->effect == 18)
         {
 int LED_COUNT = 23; // Valeurs réelles utilisées
-static int current_i = 1; // Commence à 1, car 0 est réservé
+// static int current_i = 1; // Commence à 1, car 0 est réservé
 
+int current_i = ((int)(light->progress * 11.0f)) % 11 + 1;   // use speed instead of standard increment
 
     // Tout à zéro
     for (int j = 0; j < LED_COUNT; j++) {
@@ -792,16 +793,22 @@ static int current_i = 1; // Commence à 1, car 0 est réservé
     }
 
     // Avance
-    current_i++;
-    if (current_i >= 12) {
-        current_i = 1;
-    }
+    // current_i++;
+    // if (current_i >= 12) {
+    //     current_i = 1;
+    // }
+
+
+
+
         }
         else if (light->effect == 19)
         {
 
             int LED_COUNT = 23;       // Valeurs réelles utilisées
-            static int current_i = 1; // Commence à 1, car 0 est réservé
+            // static int current_i = 1; // Commence à 1, car 0 est réservé
+            int current_i = ((int)(light->progress * 11.0f)) % 11 + 1; // use speed instead of standard increment
+
 
 
                 // Décalage voulu entre les deux LEDs
@@ -837,11 +844,11 @@ static int current_i = 1; // Commence à 1, car 0 est réservé
                     }
 
                     // Avance
-                    current_i++;
-                    if (current_i >= 12)
-                    {
-                        current_i = 1;
-                    }
+                    // current_i++;
+                    // if (current_i >= 12)
+                    // {
+                    //     current_i = 1;
+                    // }
                 
             
         }
