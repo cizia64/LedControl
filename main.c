@@ -13,7 +13,7 @@
 #include <dirent.h>
 #include <string.h>
 
-#define NUM_OPTIONS 4
+#define NUM_OPTIONS 2
 #define MAX_NAME_LEN 50
 typedef struct
 {
@@ -30,7 +30,7 @@ typedef struct
 
 LightSettings lights[NUM_OPTIONS];
 const char *lightnames[] = {
-    "F1 key", "F2 key", "Top bar", "L&R triggers"};
+    "Central light", "L&R joysticks"};
 #define NROF_TRIGGERS 14
 const char *triggernames[] = {
     "B", "A", "Y", "X", "L", "R", "FN1", "FN2", "MENU", "SELECT", "START", "ALL", "LR", "DPAD"};
