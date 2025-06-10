@@ -443,8 +443,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    TTF_Font *font = TTF_OpenFont("main.ttf", 50);   // Specify your font path
-    TTF_Font *fontsm = TTF_OpenFont("main.ttf", 36); // Specify your font path
+    TTF_Font *font = TTF_OpenFont("/mnt/SDCARD/System/resources/DejaVuSans.ttf", 40);   // Specify your font path
+    TTF_Font *fontsm = TTF_OpenFont("/mnt/SDCARD/System/resources/DejaVuSans.ttf", 36); // Specify your font path
     if (!font || !fontsm)
     {
         SDL_Log("Unable to open font: %s", TTF_GetError());
@@ -588,21 +588,48 @@ int main(int argc, char *argv[])
 
         // Display light name
         char light_name_text[256];
-        snprintf(light_name_text, sizeof(light_name_text), "%s", lights[selected_light].friendlyname);
-        SDL_Surface *surface = TTF_RenderText_Solid(font, light_name_text, color);
-        SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+// Mettre le texte en gras
+TTF_SetFontStyle(font, TTF_STYLE_BOLD);
 
-        int text_width = surface->w;
-        int text_height = surface->h;
-        SDL_FreeSurface(surface);
+// Générer le texte
+snprintf(light_name_text, sizeof(light_name_text), "%s", lights[selected_light].friendlyname);
+SDL_Surface *surface = TTF_RenderText_Blended(font, light_name_text, color);
+SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
 
-        // Calculate centered position
-        SDL_Rect dstrect = (SDL_Rect){50, 30, text_width, text_height};
-        SDL_RenderCopy(renderer, texture, NULL, &dstrect);
-        SDL_DestroyTexture(texture);
+int text_width = surface->w;
+int text_height = surface->h;
+SDL_FreeSurface(surface);
+
+// Coordonnées centrées pour le texte
+int center_x = (window_width - text_width) / 2;
+int center_y = 30;
+
+// Rectangle de fond : pleine largeur, ajusté en hauteur
+SDL_Rect bg_rect = {
+    .x = 0,
+    .y = center_y - 5,
+    .w = window_width,
+    .h = text_height + 10
+};
+SDL_SetRenderDrawColor(renderer, 64, 64, 64, 255); // Gris foncé
+SDL_RenderFillRect(renderer, &bg_rect);
+
+// Affichage du texte centré
+SDL_Rect dstrect = {
+    .x = center_x,
+    .y = center_y,
+    .w = text_width,
+    .h = text_height
+};
+SDL_RenderCopy(renderer, texture, NULL, &dstrect);
+SDL_DestroyTexture(texture);
+
+// Réinitialiser le style
+TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+
 
         // Display settings
-        const char *settings_labels[6] = {"Effect", "Color", "Color2", "Speed", "Brightness", "Trigger"};
+        const char *settings_labels[6] = {"Effect", "Color1", "Color2", "Speed", "Brightness", "Trigger"};
         int settings_values[6] = {
             lights[selected_light].effect,
             lights[selected_light].color,
@@ -638,7 +665,8 @@ snprintf(setting_text, sizeof(setting_text), "%s: %s",
                 text_height = surface->h;
 
                 SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
-                draw_rounded_rect(renderer, 20, 115, text_width + 60, 88, 40);
+                SDL_Rect rect = {20, 112, text_width + 60, 68};
+SDL_RenderFillRect(renderer, &rect);
 
                 SDL_FreeSurface(surface);
 
@@ -659,18 +687,31 @@ snprintf(setting_text, sizeof(setting_text), "%s: %s",
                 text_width = surface->w;
                 text_height = surface->h;
                 SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
-                draw_rounded_rect(renderer, 20, 115 + j * 92, text_width + 130, 88, 40);
-                // Draw color cube
+                // draw_rounded_rect(renderer, 20, 112 + j * 82, text_width + 130, 68, 30);
+                SDL_Rect rect = {20, 112 + j * 82, text_width + 130, 68};
+                SDL_RenderFillRect(renderer, &rect);
+
+                int cube_x = 30 + text_width + 30;
+                int cube_y = 118 + j * 82;
+                int cube_w = 56;
+                int cube_h = 56;
+                int corner_radius = 10;
+
+                // Step 1: draw the slightly larger black background
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                draw_rounded_rect(renderer, cube_x - 1, cube_y - 1, cube_w + 2, cube_h + 2, corner_radius + 1);
+
+
+                // Step 2: Draw the coloured cube on top
                 SDL_Color color_cube = hex_to_sdl_color(settings_values[j]);
-                SDL_Rect color_rect = {30 + text_width + 30, 122 + j * 92, 50, 55}; // Cube size 50x50, adjust x position as needed
                 SDL_SetRenderDrawColor(renderer, color_cube.r, color_cube.g, color_cube.b, color_cube.a);
-                // SDL_RenderFillRect(renderer, &color_rect);
-                draw_rounded_rect(renderer, 30 + text_width + 30, 130 + j * 92, 56, 56, 10);
+                draw_rounded_rect(renderer, cube_x, cube_y, cube_w, cube_h, corner_radius);
+
 
                 SDL_FreeSurface(surface);
 
                 // Calculate text position
-                dstrect = (SDL_Rect){50, 122 + j * 92, text_width, text_height};
+                dstrect = (SDL_Rect){50, 122 + j * 82, text_width, text_height};
                 SDL_RenderCopy(renderer, texture, NULL, &dstrect);
                 SDL_DestroyTexture(texture);
             }
@@ -686,11 +727,13 @@ snprintf(setting_text, sizeof(setting_text), "%s: %s",
                 text_width = surface->w;
                 text_height = surface->h;
                 SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
-                draw_rounded_rect(renderer, 20, 115 + j * 92, text_width + 60, 88, 40);
+                // draw_rounded_rect(renderer, 20, 112 + j * 82, text_width + 60, 68, 30);
+                SDL_Rect rect = {20, 112 + j * 82, text_width + 60, 68};
+                SDL_RenderFillRect(renderer, &rect);
                 SDL_FreeSurface(surface);
 
                 // Calculate centered position
-                dstrect = (SDL_Rect){50, 122 + j * 92, text_width, text_height};
+                dstrect = (SDL_Rect){50, 122 + j * 82, text_width, text_height};
 
                 SDL_RenderCopy(renderer, texture, NULL, &dstrect);
 
@@ -708,11 +751,13 @@ snprintf(setting_text, sizeof(setting_text), "%s: %s",
                 text_width = surface->w;
                 text_height = surface->h;
                 SDL_SetRenderDrawColor(renderer, bgcolor.r, bgcolor.g, bgcolor.b, 255);
-                draw_rounded_rect(renderer, 20, 115 + j * 92, text_width + 60, 88, 40);
+                // draw_rounded_rect(renderer, 20, 112 + j * 82, text_width + 60, 68, 30);
+                SDL_Rect rect = {20, 112 + j * 82, text_width + 60, 68};
+SDL_RenderFillRect(renderer, &rect);
                 SDL_FreeSurface(surface);
 
                 // Calculate centered position
-                dstrect = (SDL_Rect){50, 122 + j * 92, text_width, text_height};
+                dstrect = (SDL_Rect){50, 122 + j * 82, text_width, text_height};
 
                 SDL_RenderCopy(renderer, texture, NULL, &dstrect);
 
@@ -720,10 +765,14 @@ snprintf(setting_text, sizeof(setting_text), "%s: %s",
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 32, 36, 32, 255);
-        draw_rounded_rect(renderer, 20, window_height - 90, 330, 80, 40);
+        SDL_SetRenderDrawColor(renderer, 64, 64, 64, 255);
+        // draw_rounded_rect(renderer, 20, window_height - 90, 330, 80, 40);
+        SDL_Rect rect = {20, window_height - 95, 350, 80};
+        SDL_RenderFillRect(renderer, &rect);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        draw_rounded_rect(renderer, 30, window_height - 80, 100, 60, 30);
+        // draw_rounded_rect(renderer, 30, window_height - 80, 100, 60, 30);
+        rect = (SDL_Rect){30, window_height - 85, 100, 60};
+        SDL_RenderFillRect(renderer, &rect);
         char button_text[256];
         snprintf(button_text, sizeof(button_text), "L/R");
         surface = TTF_RenderText_Solid(fontsm, button_text, darkcolor);
@@ -747,10 +796,17 @@ snprintf(setting_text, sizeof(setting_text), "%s: %s",
         SDL_DestroyTexture(texture);
         SDL_FreeSurface(surface);
 
-        SDL_SetRenderDrawColor(renderer, 32, 36, 32, 255);
-        draw_rounded_rect(renderer, window_width - 190, window_height - 90, 170, 80, 40);
+        SDL_SetRenderDrawColor(renderer, 64, 64, 64, 255);
+        // draw_rounded_rect(renderer, window_width - 190, window_height - 90, 170, 80, 40);
+        // SDL_Rect rect = {window_width - 190, window_height - 90, 170, 80};
+        rect = (SDL_Rect){window_width - 190, window_height - 95, 170, 80};
+        SDL_RenderFillRect(renderer, &rect);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        draw_rounded_rect(renderer, window_width - 180, window_height - 80, 60, 60, 30);
+        // draw_rounded_rect(renderer, window_width - 180, window_height - 80, 60, 60, 30);
+        // SDL_Rect rect = {window_width - 180, window_height - 80, 60, 60};
+        rect = (SDL_Rect){window_width - 180, window_height - 85, 60, 60};
+        
+        SDL_RenderFillRect(renderer, &rect);
 
         snprintf(button_text, sizeof(button_text), "B");
         surface = TTF_RenderText_Solid(fontsm, button_text, darkcolor);
