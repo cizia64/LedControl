@@ -31,9 +31,9 @@ typedef struct
 LightSettings lights[NUM_OPTIONS];
 const char *lightnames[] = {
     "Central light", "L&R joysticks"};
-#define NROF_TRIGGERS 14
+#define NROF_TRIGGERS 12
 const char *triggernames[] = {
-    "B", "A", "Y", "X", "L", "R", "FN1", "FN2", "MENU", "SELECT", "START", "ALL", "LR", "DPAD"};
+    "B", "A", "Y", "X", "L", "R",  "SELECT", "START","MENU", "ALL", "LR", "DPAD"};
 
 const char *effect_names[] = {
     "Linear", "Breathe", "Interval Breathe", "Static",

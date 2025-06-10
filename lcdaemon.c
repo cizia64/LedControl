@@ -592,15 +592,15 @@ void update_light_settings(LightSettings *light, const char *dir)
             if (pressed)
             {
                 int doit = 0;
-                if (light->trigger == 12 || last_pressed == light->trigger - 1)
+                if (light->trigger == 10 || last_pressed == light->trigger - 1)
                 {
                     doit = 1;
                 }
-                if (light->trigger == 13 && (last_pressed == 4 || last_pressed == 5))
+                if (light->trigger == 11 && (last_pressed == 4 || last_pressed == 5))
                 {
                     doit = 1;
                 }
-                if (light->trigger == 14 && last_pressed == 100)
+                if (light->trigger == 12 && last_pressed == 100)
                 {
                     doit = 1;
                 }
