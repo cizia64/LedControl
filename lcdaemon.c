@@ -752,28 +752,69 @@ void update_light_settings(LightSettings *light, const char *dir)
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
         }
-        else if (light->effect == 17)
+        else if (light->effect == 18)
         {
 
-            // Initialisation (à faire une seule fois, si nécessaire)
-int LED_COUNT = 21; // ou 25 si tu veux correspondre au script shell
-static int current_i = 0; // comme i=1 dans le shell
+            int LED_COUNT = 23;       // Valeurs réelles utilisées
+            static int current_i = 1; // Commence à 1, car 0 est réservé
 
-if (light->effect == 17)
-{
-    // Génère le tableau : 1 LED rouge, le reste en noir
-int LED_COUNT = 23;
-static int current_i = 1;  // de 0 à 10
 
-    // Éteint toutes les LEDs
+                // Décalage voulu entre les deux LEDs
+                int offset = 7; // 1 -> opposite
+
+
+                    // Réinitialise tout à noir
+                    for (int j = 0; j < LED_COUNT; j++)
+                    {
+                        light->colorarray[j] = 0x000000;
+                    }
+
+                    // Calcul de l’index pour la LED opposée avec décalage
+                    int opposite_i = 23 - current_i + offset;
+
+                    // Clamp pour rester dans les limites valides [12..22]
+                    if (opposite_i >= LED_COUNT)
+                        opposite_i -= 11; // reboucle dans [12..22]
+                    if (opposite_i < 12)
+                        opposite_i += 11;
+
+                    // Applique les couleurs
+                    if (current_i < 12)
+                    {
+                        light->colorarray[current_i] = light->color;
+                        light->colorarray[opposite_i] = light->color;
+                    }
+
+                    // Affiche
+                    for (int j = 0; j < LED_COUNT; j++)
+                    {
+                        fprintf(file2, "%06X ", light->colorarray[j]);
+                    }
+
+                    // Avance
+                    current_i++;
+                    if (current_i >= 12)
+                    {
+                        current_i = 1;
+                    }
+                
+            
+        }
+          else if (light->effect == 17)
+        {
+int LED_COUNT = 23; // Valeurs réelles utilisées
+static int current_i = 1; // Commence à 1, car 0 est réservé
+
+
+    // Tout à zéro
     for (int j = 0; j < LED_COUNT; j++) {
         light->colorarray[j] = 0x000000;
     }
 
-    // Allume 2 LEDs symétriques : une dans chaque moitié
+    // Ne jamais toucher colorarray[0]
     if (current_i < 12) {
-        light->colorarray[current_i] = light->color;           // bande gauche
-        light->colorarray[current_i + 11] = light->color;      // bande droite
+        light->colorarray[current_i] = light->color;         // bande gauche (1 à 11)
+        light->colorarray[current_i + 11] = light->color;    // bande droite (12 à 22)
     }
 
     // Affichage
@@ -781,28 +822,15 @@ static int current_i = 1;  // de 0 à 10
         fprintf(file2, "%06X ", light->colorarray[j]);
     }
 
-    // Avance au prochain couple de LEDs
+    // Avance
     current_i++;
     if (current_i >= 12) {
-        current_i = 0;
+        current_i = 1;
     }
 
 
-    // Optionnel : sleep simulé ou tempo d'affichage
-    // handled by the calling loop or effect_duration
-}
 
-            // Affichage des LEDs
-            // for (int i = 0; i < 21; i++)
-            // {
-            //     fprintf(file2, "%06X ", light->colorarray[i]);
-            // }
-
-            // // Avancement du point rouge
-            // if (light->progress == 0.0)
-            // {
-            //     shiftColors(light->colorarray, 22);
-            // }
+            
         }
         else
         {
@@ -902,11 +930,6 @@ int main()
 
     changePermissions("/sys/class/led_anim", 0);
 
-    if (read_settings("led_daemon.conf", lights, MAX_LIGHTS) != 0)
-    {
-        return 1;
-    }
-
     while (running)
     {
         if (!jsopen)
@@ -941,6 +964,11 @@ int main()
             }
         }
 
+        if (read_settings("led_daemon.conf", lights, MAX_LIGHTS) != 0)
+        {
+            return 1;
+        }
+
         for (int i = 0; i < MAX_LIGHTS; i++)
         {
             // Ne traiter que les lumières 0 et 1
@@ -957,7 +985,7 @@ int main()
             {
                 if (first_run || lights[i].updated)
                 {
-                    int initialColorArray[10] = {lights[i].color, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000};
+                    int initialColorArray[10] = {lights[i].color, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000};
                     for (int j = 0; j < 8; j++)
                     {
                         lights[i].colorarray[j] = initialColorArray[j];
