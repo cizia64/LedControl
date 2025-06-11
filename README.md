@@ -1,62 +1,131 @@
-# Before you begin, are you using MinUI?
-    
-Did you know MinUI actually is not doing vsync because of a wrong cores implementation? (just play something horizontal scrolling and it will skip a frame every few seconds, yes the game is not supposed to do that!) 
-No worries, I have build a version with a reworked emulator engine
-[https://github.com/ro8inmorgan/MinUI](https://github.com/ro8inmorgan/MinUI)
+# TrimUI Smart Pro LED Manager (CrossMix Edition)
 
-Now onto the Stuff why you here for:
-    
-# LedControl
+This is a **LED control daemon for the TrimUI Smart Pro**, designed specifically for use with **CrossMix OS**.
 
-Led Control app for TrimUI Brick (It's been reported on reddit that it works with Smart pro too)  
-Works with Stock OS (Mix, cross etc) and MinUI. Might work with Knulli too but not tested
+It is based on [LedControl](https://github.com/ro8inmorgan/LedControl) by [ro8inmorgan](https://github.com/ro8inmorgan), **heavily modified and extended** to support:
 
-![alt text](screenshot.png "Screenshot LedControl")
+- The specific LED layout of the TrimUI Smart Pro (TSP)
+- Built-in CrossMix LED effects:  
+  `Battery Level`, `CPU Temp`, `CPU Speed`, `Ambilight`, etc.
+- Brand-new effects:  
+  `Rotation`, `Rotation Mirror`, `Directions`, and more.
+- An improved UI adapted to the visual style of **CrossMix**
+- A **description panel per effect**, explaining how it works and how to configure it
+
+---
+
+## ✨ Features
+
+- Fully compatible with the TSP’s 23-LED layout
+- Per-effect configuration via `led_daemon.conf`
+- Runtime effect switching
+- Joystick-triggered reactive effects
+- Shared brightness control (MainUI with optional UI-synced override)
+- Smooth animations: rainbow waves, pulses, color flows, and D-pad indicators
+- Battery level visualization with blinking alert when charge is low
+
+---
+
+## 📷 Screenshots
+
+![Screenshot UI](_assets/screenshot.png "Screenshot LedControl")
+
+---
 
 # Installation
 
-You can download the latest version of the Led Control app from the [Releases page](https://github.com/ro8inmorgan/LedControl/releases).
+You have nothing to do on CrossMix OS, it's included natively.
 
-## Stock/StockMix/Crossmix:
+You can download the archive of this repo and extract it to a new `Apps\LedControl/` folder on your SD card.
 
-Just unzip and copy the LedControl.pak folder to the Apps folder on your SD Card, then bootup your TrimUI Brick and the Led Control app will be available in the Apps menu.
+Then run "Led Control" app.
 
-## MinUI:
+---
 
-_starting with MinUI 20250226-0, the TrimUI Brick and SmartPro folders have been merged, and the pak must be placed in the 5040 folder_
+## 🧠 Notes on TSP LED System
 
-#### MinUI 20250226-0 or later
+- All LEDs share a **single global brightness value** (`max_scale`)
+- Brightness cannot be controlled per light — only globally
+- Colors are written as **24-bit RRGGBB** hex (not XRGB or 32-bit)
+- Frames are sent to:
+  - `/sys/class/led_anim/frame_hex`
+  - `/sys/class/led_anim/effect_rgb_hex_<light>`
+- The two joystick rings (left and right) have a non-linear mapping:
+  - The **first RRGGBB color** in the frame does **not** correspond to the first physical LED so we use a dummy value.
+  - Refer to the diagram below for proper indexing:
 
-- Copy the LedControl.pak folder **Tools/tg5040/** folder on your SD card, reboot your brick and app should be available in the Tools section
+![LED Numbering](_assets/led_numbers.png "Led Numbering")
 
-#### earlier versions
+---
 
-- Copy the LedControl.pak folder **Tools/tg3040/** folder on your SD card, reboot your brick and app should be available in the Tools section
+## ⚙️ Configuration (`led_daemon.conf`)
 
-# Instructions
+It is recommended to use the provided UI to modify the settings.
 
 L&R buttons to switch between lights
 D-pad up/down to select the setting and left/right to adjust its value
 
 B Button to quit the application  
-Please quit the app using the B button and not by holding the power button as that will also stop the Led Control background process
 
-# Uninstall
 
-Use the seperate included LCRemove.pak app, copy it to your SD card same way, run the app and reboot. Leds will be restored to default functions. If you run Led Control app it will install again
+Example configuration file:
 
-# TODO:
-- Got many more effects I want to add
-- Maybe react to toggle to turn on/off leds
-- Create version for Knulli
-- If possible maybe ambilight function, need to test if I can access the screen buffer
-   
-# Special thanks   
-Thank you [Retro Game Corps](https://retrogamecorps.com) for mentioning my App in your TrimUI Brick guide!
-   
-# Donations
+```
+[m]
+effect=12
+color=0xFFFFFF
+color2=0xFFFFFF
+duration=800
+maxeffects=17
+brightness=40
+trigger=2
 
-Donations are always welcome https://ko-fi.com/robindev :) :)
+[lr]
+effect=19
+color=0x0080FF
+color2=0xFFFFFF
+duration=490
+maxeffects=21
+brightness=40
+trigger=2
+```
 
-#Thanks   
-[@taylorbird](https://github.com/taylorbird)! for updating README with new instructions
+
+- `[m]` → Central LED
+- `[lr]` → Joystick rings (left and right)
+
+Each effect supports different parameters like:
+
+- `effect`: number of the current effect between 1 and `maxeffects`
+- `color` / `color2`: some effects use 1 color (I.e. Static), some are using 2 colors (i.e. Reactive), some have their own colors and doesn't use these parameters (Fire, Color Drift, Rainbox, Aurora...)
+- `duration` This is the duration if the effect: a smaller value will increase the speed of the effect
+- `trigger` Only used by "Reactive" effect
+- `brightness` 0–100, or `-1` to follow MainUI settings (recommended)
+- `maxeffects` The number of effects supported by the current light (do not modify)
+
+
+Descriptions for each effect are visible in the UI thanks to editable text files located in `effect_desc` folder
+
+---
+
+## 🔋 Example: Battery Level Effect (`effect=16`)
+
+Displays a smooth color gradient based on the battery percentage:
+
+- **Green** → 100%  
+- **Yellow** → Medium  
+- **Red** → Low battery  
+- **Blinking red** when battery <10%
+
+**Behavior adjusts based on:**
+
+- `duration` → Controls the blinking speed  
+- `brightness` → Overall intensity  
+- Battery level is read every **5 seconds**
+
+---
+
+## 📁 Source
+
+Based on [LedControl](https://github.com/ro8inmorgan/LedControl)  
+Adapted and expanded by the Cizia for TrimUI Smart Pro and [CrossMix OS](https://github.com/cizia64/CrossMix-OS/)
