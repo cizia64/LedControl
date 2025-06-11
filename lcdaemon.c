@@ -195,7 +195,6 @@ void changebrightness(const char *dir, int value)
     //     fclose(file);
     // }
     // chmodfile(filepath, 0);
-    printf("UPPPDAte4\n");
 }
 
 void handle_sigterm(int sig)
@@ -557,56 +556,52 @@ void shiftColors(int colors[], int size)
     colors[0] = last;
 }
 
-void BatteryLevelToColor(float light_progress, int *r, int *g, int *b)
+void BatteryLevelToColor(const LightSettings *light, int *r, int *g, int *b)
 {
-    static int cached_level = 100;
-    static int last_level_for_color = -1;
-    static int cached_r = 0, cached_g = 255, cached_b = 0;
-    static time_t last_read = 0;
+    static float blink_progress = 0.0f;
+    static int last_level = 100;
+    static time_t last_read_time = 0;
 
     time_t now = time(NULL);
-    if (now - last_read >= 1)
+    if (now - last_read_time >= 10)
     {
         FILE *batfile = fopen("/tmp/capacity", "r");
         if (batfile)
         {
-            fscanf(batfile, "%d", &cached_level);
+            fscanf(batfile, "%d", &last_level);
             fclose(batfile);
         }
-        last_read = now;
+        last_read_time = now;
     }
 
-    if (cached_level < 10)
+    if (last_level < 10)
     {
-        float blink = (sin(light_progress * M_PI * 2) + 1) / 2.0f;
+        // Clignotement avec vitesse liée au paramètre duration
+        float blink_step = mapSpeedToProgress(light->duration);
+        blink_progress += blink_step;
+        if (blink_progress >= 1.0f)
+            blink_progress -= 1.0f;
+
+        float blink = (sin(blink_progress * M_PI * 2) + 1) / 2.0f;
         *r = 255 * blink;
         *g = 0;
         *b = 0;
         return;
     }
 
-    if (cached_level != last_level_for_color)
+    float pct = last_level / 100.0f;
+    if (pct < 0.25f)
     {
-        float pct = cached_level / 100.0f;
-        if (pct < 0.25f)
-        {
-            CycleBetweenTwoColors(pct / 0.25f, 255, 0, 0, 255, 69, 0, &cached_r, &cached_g, &cached_b);
-        }
-        else if (pct < 0.5f)
-        {
-            CycleBetweenTwoColors((pct - 0.25f) / 0.25f, 255, 69, 0, 255, 255, 0, &cached_r, &cached_g, &cached_b);
-        }
-        else
-        {
-            CycleBetweenTwoColors((pct - 0.5f) / 0.5f, 255, 255, 0, 0, 255, 0, &cached_r, &cached_g, &cached_b);
-        }
-
-        last_level_for_color = cached_level;
+        CycleBetweenTwoColors(pct / 0.25f, 255, 0, 0, 255, 69, 0, r, g, b);
     }
-
-    *r = cached_r;
-    *g = cached_g;
-    *b = cached_b;
+    else if (pct < 0.5f)
+    {
+        CycleBetweenTwoColors((pct - 0.25f) / 0.25f, 255, 69, 0, 255, 255, 0, r, g, b);
+    }
+    else
+    {
+        CycleBetweenTwoColors((pct - 0.5f) / 0.5f, 255, 255, 0, 0, 255, 0, r, g, b);
+    }
 }
 
 float wastriggered = 0.0f;
@@ -746,7 +741,21 @@ void update_light_settings(LightSettings *light, const char *dir)
             }
         }
 
-        if (light->effect == 16) // Nothing
+        else if (light->effect == 16) // Battery Level
+        {
+            BatteryLevelToColor(light, &r, &g, &b);
+
+            int LED_COUNT = 23;
+            for (int j = 0; j < LED_COUNT; j++)
+            {
+                light->colorarray[j] = (r << 16) | (g << 8) | b;
+                fprintf(file2, "%02X%02X%02X ", r, g, b);
+            }
+
+            fprintf(file, "%02X%02X%02X\n", r, g, b);
+        }
+
+        else if (light->effect == 17) // Nothing
         {
             // Do nothing: leave it to another external process
             fclose(file);
@@ -756,7 +765,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             // chmodfile(filepath2, 0);
             return;
         }
-        else if (light->effect == 17) // Rainbow Snake
+        else if (light->effect == 18) // Rainbow Snake
         {
             fprintf(file2, "000000 ");
             ColorWave(light->progress, &r, &g, &b);
@@ -846,7 +855,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
         }
-        else if (light->effect == 18)
+        else if (light->effect == 19)
         {
             int LED_COUNT = 23;
             // static int current_i = 1; // Starts at 1, because 0 is reserved
@@ -872,7 +881,7 @@ void update_light_settings(LightSettings *light, const char *dir)
                 fprintf(file2, "%06X ", light->colorarray[j]);
             }
         }
-        else if (light->effect == 19)
+        else if (light->effect == 20)
         {
 
             int LED_COUNT = 23;
@@ -911,7 +920,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             }
         }
 
-        else if (light->effect == 20)
+        else if (light->effect == 21)
         {
 
             int LED_COUNT = 23;
@@ -959,32 +968,6 @@ void update_light_settings(LightSettings *light, const char *dir)
             {
                 fprintf(file2, "%06X ", light->colorarray[j]);
             }
-        }
-
-        else if (light->effect == 21)
-        {
-            int level = 0;
-            FILE *batfile = fopen("/tmp/capacity", "r");
-            if (batfile)
-            {
-                fscanf(batfile, "%d", &level);
-                fclose(batfile);
-            }
-            else
-            {
-                level = 0; // fallback in case file is missing
-            }
-
-            BatteryLevelToColor(light->progress, &r, &g, &b);
-
-            int LED_COUNT = 23;
-            for (int j = 0; j < LED_COUNT; j++)
-            {
-                light->colorarray[j] = (r << 16) | (g << 8) | b;
-                fprintf(file2, "%02X%02X%02X ", r, g, b);
-            }
-
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
 
         else
