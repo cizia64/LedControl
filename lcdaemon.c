@@ -576,7 +576,7 @@ void BatteryLevelToColor(const LightSettings *light, int *r, int *g, int *b)
 
     if (last_level < 10)
     {
-        // Clignotement avec vitesse liée au paramètre duration
+        // Flashing with speed linked to duration parameterFlashing with speed linked to duration parameter
         float blink_step = mapSpeedToProgress(light->duration);
         blink_progress += blink_step;
         if (blink_progress >= 1.0f)
@@ -601,6 +601,42 @@ void BatteryLevelToColor(const LightSettings *light, int *r, int *g, int *b)
     else
     {
         CycleBetweenTwoColors((pct - 0.5f) / 0.5f, 255, 255, 0, 0, 255, 0, r, g, b);
+    }
+}
+
+void CpuSpeedToColor(const LightSettings *light, int *r, int *g, int *b)
+{
+    static int last_mhz = 0;
+    static time_t last_read_time = 0;
+
+    time_t now = time(NULL);
+    if (now - last_read_time >= 1)
+    {
+        FILE *cpu = fopen("/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_cur_freq", "r");
+        if (cpu)
+        {
+            int khz = 0;
+            if (fscanf(cpu, "%d", &khz) == 1)
+            {
+                last_mhz = khz / 1000;
+            }
+            fclose(cpu);
+        }
+        last_read_time = now;
+    }
+
+    float pct = last_mhz / 2000.0f;
+    if (pct < 0.33f)
+    {
+        CycleBetweenTwoColors(pct / 0.33f, 0, 255, 0, 127, 255, 0, r, g, b); // Green to Chartreuse
+    }
+    else if (pct < 0.66f)
+    {
+        CycleBetweenTwoColors((pct - 0.33f) / 0.33f, 127, 255, 0, 255, 140, 0, r, g, b); // Chartreuse to Orange
+    }
+    else
+    {
+        CycleBetweenTwoColors((pct - 0.66f) / 0.34f, 255, 140, 0, 255, 0, 0, r, g, b); // Orange to Red
     }
 }
 
@@ -755,7 +791,21 @@ void update_light_settings(LightSettings *light, const char *dir)
             fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
 
-        else if (light->effect == 17) // Nothing
+        else if (light->effect == 17) // CPU Speed
+        {
+            CpuSpeedToColor(light, &r, &g, &b);
+
+            int LED_COUNT = 23;
+            for (int j = 0; j < LED_COUNT; j++)
+            {
+                light->colorarray[j] = (r << 16) | (g << 8) | b;
+                fprintf(file2, "%02X%02X%02X ", r, g, b);
+            }
+
+            fprintf(file, "%02X%02X%02X\n", r, g, b);
+        }
+
+        else if (light->effect == 18) // Nothing
         {
             // Do nothing: leave it to another external process
             fclose(file);
@@ -765,7 +815,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             // chmodfile(filepath2, 0);
             return;
         }
-        else if (light->effect == 18) // Rainbow Snake
+        else if (light->effect == 19) // Rainbow Snake
         {
             fprintf(file2, "000000 ");
             ColorWave(light->progress, &r, &g, &b);
@@ -855,7 +905,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
         }
-        else if (light->effect == 19)
+        else if (light->effect == 20)
         {
             int LED_COUNT = 23;
             // static int current_i = 1; // Starts at 1, because 0 is reserved
@@ -881,7 +931,7 @@ void update_light_settings(LightSettings *light, const char *dir)
                 fprintf(file2, "%06X ", light->colorarray[j]);
             }
         }
-        else if (light->effect == 20)
+        else if (light->effect == 21)
         {
 
             int LED_COUNT = 23;
@@ -920,7 +970,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             }
         }
 
-        else if (light->effect == 21)
+        else if (light->effect == 22)
         {
 
             int LED_COUNT = 23;
