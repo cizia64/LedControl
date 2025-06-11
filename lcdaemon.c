@@ -565,7 +565,7 @@ void BatteryLevelToColor(const LightSettings *light, int *r, int *g, int *b)
     time_t now = time(NULL);
     if (now - last_read_time >= 10)
     {
-        FILE *batfile = fopen("/tmp/capacity", "r");
+        FILE *batfile = fopen("/sys/class/power_supply/axp2202-battery/capacity", "r");
         if (batfile)
         {
             fscanf(batfile, "%d", &last_level);
