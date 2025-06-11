@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <SDL2/SDL.h>
+#include <time.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -140,8 +141,34 @@ void changePermissions(const char *path, int writable)
     }
 }
 
-void changebrightness(const char *dir, const LightSettings *lights)
+int get_mainui_brightness()
 {
+    FILE *fp = popen("/usr/trimui/bin/shmvar ledvalue", "r");
+    if (!fp)
+        return 0;
+
+    char buffer[32];
+    if (!fgets(buffer, sizeof(buffer), fp))
+    {
+        pclose(fp);
+        return 0;
+    }
+    pclose(fp);
+
+    int ui_value = atoi(buffer);
+
+    // Cross multiplication towards 0–60
+    return (ui_value * 60) / 10;
+}
+
+void changebrightness(const char *dir, int value)
+{
+
+    if (value == -1) // the brightness is set By MainUI value and not by Led_Daemon
+    {
+        value = get_mainui_brightness();
+    }
+
     char filepath[256];
     FILE *file;
 
@@ -152,22 +179,23 @@ void changebrightness(const char *dir, const LightSettings *lights)
     file = fopen(filepath, "w");
     if (file != NULL)
     {
-        fprintf(file, "%d\n", lights[0].brightness);
+        fprintf(file, "%d\n", value);
         // fprintf(file, "%d\n", lights[1].brightness);
         fclose(file);
     }
     chmodfile(filepath, 0);
 
     // Left+right joysticks [lr] → lights[1]
-    snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
-    chmodfile(filepath, 1);
-    file = fopen(filepath, "w");
-    if (file != NULL)
-    {
-        fprintf(file, "%d\n", lights[1].brightness);
-        fclose(file);
-    }
-    chmodfile(filepath, 0);
+    // snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
+    // chmodfile(filepath, 1);
+    // file = fopen(filepath, "w");
+    // if (file != NULL)
+    // {
+    //     fprintf(file, "%d\n", lights[1].brightness);
+    //     fclose(file);
+    // }
+    // chmodfile(filepath, 0);
+    printf("UPPPDAte4\n");
 }
 
 void handle_sigterm(int sig)
@@ -529,6 +557,58 @@ void shiftColors(int colors[], int size)
     colors[0] = last;
 }
 
+void BatteryLevelToColor(float light_progress, int *r, int *g, int *b)
+{
+    static int cached_level = 100;
+    static int last_level_for_color = -1;
+    static int cached_r = 0, cached_g = 255, cached_b = 0;
+    static time_t last_read = 0;
+
+    time_t now = time(NULL);
+    if (now - last_read >= 1)
+    {
+        FILE *batfile = fopen("/tmp/capacity", "r");
+        if (batfile)
+        {
+            fscanf(batfile, "%d", &cached_level);
+            fclose(batfile);
+        }
+        last_read = now;
+    }
+
+    if (cached_level < 10)
+    {
+        float blink = (sin(light_progress * M_PI * 2) + 1) / 2.0f;
+        *r = 255 * blink;
+        *g = 0;
+        *b = 0;
+        return;
+    }
+
+    if (cached_level != last_level_for_color)
+    {
+        float pct = cached_level / 100.0f;
+        if (pct < 0.25f)
+        {
+            CycleBetweenTwoColors(pct / 0.25f, 255, 0, 0, 255, 69, 0, &cached_r, &cached_g, &cached_b);
+        }
+        else if (pct < 0.5f)
+        {
+            CycleBetweenTwoColors((pct - 0.25f) / 0.25f, 255, 69, 0, 255, 255, 0, &cached_r, &cached_g, &cached_b);
+        }
+        else
+        {
+            CycleBetweenTwoColors((pct - 0.5f) / 0.5f, 255, 255, 0, 0, 255, 0, &cached_r, &cached_g, &cached_b);
+        }
+
+        last_level_for_color = cached_level;
+    }
+
+    *r = cached_r;
+    *g = cached_g;
+    *b = cached_b;
+}
+
 float wastriggered = 0.0f;
 void update_light_settings(LightSettings *light, const char *dir)
 {
@@ -881,6 +961,32 @@ void update_light_settings(LightSettings *light, const char *dir)
             }
         }
 
+        else if (light->effect == 21)
+        {
+            int level = 0;
+            FILE *batfile = fopen("/tmp/capacity", "r");
+            if (batfile)
+            {
+                fscanf(batfile, "%d", &level);
+                fclose(batfile);
+            }
+            else
+            {
+                level = 0; // fallback in case file is missing
+            }
+
+            BatteryLevelToColor(light->progress, &r, &g, &b);
+
+            int LED_COUNT = 23;
+            for (int j = 0; j < LED_COUNT; j++)
+            {
+                light->colorarray[j] = (r << 16) | (g << 8) | b;
+                fprintf(file2, "%02X%02X%02X ", r, g, b);
+            }
+
+            fprintf(file, "%02X%02X%02X\n", r, g, b);
+        }
+
         else
         {
             fprintf(file, "%06X\n", light->color);
@@ -979,6 +1085,11 @@ int main()
 
     changePermissions("/sys/class/led_anim", 0);
 
+    if (read_settings("led_daemon.conf", lights, MAX_LIGHTS) != 0)
+    {
+        return 1;
+    }
+
     while (running)
     {
         if (!jsopen)
@@ -1046,7 +1157,7 @@ int main()
                         lights[i].colorarray[j] = initialColorArray[j];
                     }
                 }
-                changebrightness("/sys/class/led_anim", lights);
+                changebrightness("/sys/class/led_anim", lights[0].brightness);
                 update_light_settings(&lights[i], "/sys/class/led_anim");
                 lights[i].updated = false;
             }

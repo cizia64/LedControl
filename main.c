@@ -38,7 +38,7 @@ const char *triggernames[] = {
 const char *effect_names[] = {
     "Linear", "Breathe", "Interval Breathe", "Static",
     "Blink 1", "Blink 2", "Blink 3", "Color Drift", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Nothing", "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"};
+    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Nothing", "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions", "Battery Level"};
 
 int read_settings(const char *filename, LightSettings *lights, int max_lights)
 {
@@ -306,7 +306,7 @@ void handle_light_input(LightSettings *light, SDL_Event *event, int selected_set
         }
         else if (event->key.keysym.sym == SDLK_LEFT || event->cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
         {
-            new_brightness = (new_brightness - 1 < 0) ? 0 : new_brightness - 1;
+            new_brightness = (new_brightness - 1 < -1) ? -1 : new_brightness - 1;
         }
 
         // Apply the same value to both lights
@@ -388,6 +388,26 @@ char *read_effect_description(const char *effect_name)
     fread(buffer, 1, sizeof(buffer) - 1, f);
     fclose(f);
     return buffer;
+}
+
+int get_mainui_brightness()
+{
+    FILE *fp = popen("/usr/trimui/bin/shmvar ledvalue", "r");
+    if (!fp)
+        return 0;
+
+    char buffer[32];
+    if (!fgets(buffer, sizeof(buffer), fp))
+    {
+        pclose(fp);
+        return 0;
+    }
+    pclose(fp);
+
+    int ui_value = atoi(buffer);
+
+    // Cross multiplication towards 0–60
+    return (ui_value * 60) / 10;
 }
 
 int main(int argc, char *argv[])
@@ -726,7 +746,15 @@ int main(int argc, char *argv[])
             }
             else
             {
-                snprintf(setting_text, sizeof(setting_text), "%s: %d", settings_labels[j], settings_values[j]);
+                if (j == 4 && settings_values[j] == -1)
+                {
+                    int brightness_from_ui = get_mainui_brightness();
+                    snprintf(setting_text, sizeof(setting_text), "%s: %d (MainUI)", settings_labels[j], brightness_from_ui);
+                }
+                else
+                {
+                    snprintf(setting_text, sizeof(setting_text), "%s: %d", settings_labels[j], settings_values[j]);
+                }
 
                 SDL_Color current_color = (j == selected_setting) ? highlight_color : color;
 
