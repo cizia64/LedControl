@@ -39,7 +39,8 @@ const char *triggernames[] = {
 const char *effect_names[] = {
     "Linear", "Breathe", "Interval Breathe", "Static",
     "Blink 1", "Blink 2", "Blink 3", "Color Drift", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Battery Level", "CPU Speed", "CPU Temperature", "Nothing", "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"};
+    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Battery Level", "CPU Speed", "CPU Temperature", "Ambilight", "Nothing",
+    "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"}; // exclusive to "lr" light
 
 int read_settings(const char *filename, LightSettings *lights, int max_lights)
 {

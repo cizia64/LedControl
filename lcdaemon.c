@@ -718,6 +718,27 @@ void CpuTempToColor(const LightSettings *light, int *r, int *g, int *b)
     } // Red
 }
 
+void update_ambilight(const LightSettings *light)
+{
+    static long last_ms = 0;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    long now_ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+
+    int delay_ms = light->duration;
+    if (delay_ms < 200)
+        delay_ms = 200;
+
+    if (now_ms - last_ms < delay_ms)
+        return;
+
+    last_ms = now_ms;
+
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "./ambilight_runner.sh %s &", light->name);
+    system(cmd); // Non - blocking call thanks to `&`.
+}
+
 float wastriggered = 0.0f;
 void update_light_settings(LightSettings *light, const char *dir)
 {
@@ -897,7 +918,19 @@ void update_light_settings(LightSettings *light, const char *dir)
             fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
 
-        else if (light->effect == 19) // Nothing
+        else if (light->effect == 19) // Ambilight
+        {
+            update_ambilight(light);
+
+            // No need to write to file/file2
+            fclose(file);
+            fclose(file2);
+            chmodfile(filepath, 0);
+            chmodfile(filepath2, 0);
+            return;
+        }
+
+        else if (light->effect == 20) // Nothing
         {
             // Do nothing: leave it to another external process
             fclose(file);
@@ -907,7 +940,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             // chmodfile(filepath2, 0);
             return;
         }
-        else if (light->effect == 20) // Rainbow Snake
+        else if (light->effect == 21) // Rainbow Snake
         {
             fprintf(file2, "000000 ");
             ColorWave(light->progress, &r, &g, &b);
@@ -997,7 +1030,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
         }
-        else if (light->effect == 21)
+        else if (light->effect == 22)
         {
             int LED_COUNT = 23;
             // static int current_i = 1; // Starts at 1, because 0 is reserved
@@ -1023,7 +1056,7 @@ void update_light_settings(LightSettings *light, const char *dir)
                 fprintf(file2, "%06X ", light->colorarray[j]);
             }
         }
-        else if (light->effect == 22)
+        else if (light->effect == 23)
         {
 
             int LED_COUNT = 23;
@@ -1062,7 +1095,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             }
         }
 
-        else if (light->effect == 23)
+        else if (light->effect == 24)
         {
 
             int LED_COUNT = 23;
