@@ -59,6 +59,7 @@ int jsopen = 0; // Flag to keep track of whether the file is open
 
 void chmodfile(const char *file, int writable)
 {
+    return;
     struct stat statbuf;
     if (stat(file, &statbuf) == 0)
     {
@@ -88,6 +89,7 @@ void chmodfile(const char *file, int writable)
 
 void changePermissions(const char *path, int writable)
 {
+
     DIR *dir;
     struct dirent *entry;
 
@@ -143,58 +145,59 @@ void changePermissions(const char *path, int writable)
 
 int get_mainui_brightness()
 {
-    FILE *fp = popen("/usr/trimui/bin/shmvar ledvalue", "r");
-    if (!fp)
-        return 0;
+    static int cached_value = 60; // default value
+    static time_t last_read = 0;
 
-    char buffer[32];
-    if (!fgets(buffer, sizeof(buffer), fp))
+    time_t now = time(NULL);
+    if (now - last_read >= 5)
     {
-        pclose(fp);
-        return 0;
+        FILE *fp = popen("/usr/trimui/bin/shmvar ledvalue", "r");
+        if (fp)
+        {
+            char buffer[32];
+            if (fgets(buffer, sizeof(buffer), fp))
+            {
+                int ui_value = atoi(buffer);
+                cached_value = (ui_value * 60) / 10;
+            }
+            pclose(fp);
+        }
+        last_read = now;
     }
-    pclose(fp);
 
-    int ui_value = atoi(buffer);
-
-    // Cross multiplication towards 0–60
-    return (ui_value * 60) / 10;
+    return cached_value;
 }
 
 void changebrightness(const char *dir, int value)
 {
-
-    if (value == -1) // the brightness is set By MainUI value and not by Led_Daemon
-    {
-        value = get_mainui_brightness();
-    }
-
     char filepath[256];
     FILE *file;
 
-    // central LED [m] → lights[0]
-    // only one global brightness value for all leds on TSP
+    if (value == -1) // The brightness is controlled by MainUI
+    {
+        if (access("/tmp/led_deamon_live", F_OK) == 0)
+        {
+            value = get_mainui_brightness(); // get from shmvar, cached every 5s
+        }
+        else
+        {
+            // Do not touch max_scale if not running in live mode
+            return;
+        }
+    }
+
+    // Only one global brightness value for all LEDs on TSP
     snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
     chmodfile(filepath, 1);
+
     file = fopen(filepath, "w");
     if (file != NULL)
     {
         fprintf(file, "%d\n", value);
-        // fprintf(file, "%d\n", lights[1].brightness);
         fclose(file);
     }
-    chmodfile(filepath, 0);
 
-    // Left+right joysticks [lr] → lights[1]
-    // snprintf(filepath, sizeof(filepath), "%s/max_scale", dir);
-    // chmodfile(filepath, 1);
-    // file = fopen(filepath, "w");
-    // if (file != NULL)
-    // {
-    //     fprintf(file, "%d\n", lights[1].brightness);
-    //     fclose(file);
-    // }
-    // chmodfile(filepath, 0);
+    chmodfile(filepath, 0);
 }
 
 void handle_sigterm(int sig)
@@ -640,6 +643,81 @@ void CpuSpeedToColor(const LightSettings *light, int *r, int *g, int *b)
     }
 }
 
+void CpuTempToColor(const LightSettings *light, int *r, int *g, int *b)
+{
+    static int last_temp = 0;
+    static long last_read_time_ms = 0;
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    long now_ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+
+    if (now_ms - last_read_time_ms >= 1000) // toutes les 1s
+    {
+        FILE *f = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
+        if (f)
+        {
+            int temp_raw = 0;
+            if (fscanf(f, "%d", &temp_raw) == 1)
+            {
+                last_temp = temp_raw / 1000; // convertir en °C
+            }
+            fclose(f);
+        }
+        last_read_time_ms = now_ms;
+    }
+
+    // Mapping température → couleur
+    if (last_temp <= 40)
+    {
+        *r = 0;
+        *g = 255;
+        *b = 0;
+    } // Green
+    else if (last_temp <= 45)
+    {
+        *r = 127;
+        *g = 255;
+        *b = 0;
+    } // Chartreuse
+    else if (last_temp <= 50)
+    {
+        *r = 255;
+        *g = 255;
+        *b = 0;
+    } // Yellow
+    else if (last_temp <= 55)
+    {
+        *r = 255;
+        *g = 165;
+        *b = 0;
+    } // Orange
+    else if (last_temp <= 60)
+    {
+        *r = 255;
+        *g = 140;
+        *b = 0;
+    } // Dark Orange
+    else if (last_temp <= 65)
+    {
+        *r = 255;
+        *g = 69;
+        *b = 0;
+    } // Red Orange
+    else if (last_temp <= 70)
+    {
+        *r = 255;
+        *g = 20;
+        *b = 0;
+    } // Vermilion
+    else
+    {
+        *r = 255;
+        *g = 0;
+        *b = 0;
+    } // Red
+}
+
 float wastriggered = 0.0f;
 void update_light_settings(LightSettings *light, const char *dir)
 {
@@ -805,7 +883,21 @@ void update_light_settings(LightSettings *light, const char *dir)
             fprintf(file, "%02X%02X%02X\n", r, g, b);
         }
 
-        else if (light->effect == 18) // Nothing
+        else if (light->effect == 18) // CPU Temperature
+        {
+            CpuTempToColor(light, &r, &g, &b);
+
+            int LED_COUNT = 23;
+            for (int j = 0; j < LED_COUNT; j++)
+            {
+                light->colorarray[j] = (r << 16) | (g << 8) | b;
+                fprintf(file2, "%02X%02X%02X ", r, g, b);
+            }
+
+            fprintf(file, "%02X%02X%02X\n", r, g, b);
+        }
+
+        else if (light->effect == 19) // Nothing
         {
             // Do nothing: leave it to another external process
             fclose(file);
@@ -815,7 +907,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             // chmodfile(filepath2, 0);
             return;
         }
-        else if (light->effect == 19) // Rainbow Snake
+        else if (light->effect == 20) // Rainbow Snake
         {
             fprintf(file2, "000000 ");
             ColorWave(light->progress, &r, &g, &b);
@@ -905,7 +997,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
             //     fprintf(file2, "%02X%02X%02X ", r, g, b);
         }
-        else if (light->effect == 20)
+        else if (light->effect == 21)
         {
             int LED_COUNT = 23;
             // static int current_i = 1; // Starts at 1, because 0 is reserved
@@ -931,7 +1023,7 @@ void update_light_settings(LightSettings *light, const char *dir)
                 fprintf(file2, "%06X ", light->colorarray[j]);
             }
         }
-        else if (light->effect == 21)
+        else if (light->effect == 22)
         {
 
             int LED_COUNT = 23;
@@ -970,7 +1062,7 @@ void update_light_settings(LightSettings *light, const char *dir)
             }
         }
 
-        else if (light->effect == 22)
+        else if (light->effect == 23)
         {
 
             int LED_COUNT = 23;
@@ -1116,7 +1208,7 @@ int main()
     signal(SIGCONT, handle_sigcont);
     signal(SIGSTOP, handle_sigsleep);
 
-    changePermissions("/sys/class/led_anim", 0);
+    changePermissions("/sys/class/led_anim", 1);
 
     if (read_settings("led_daemon.conf", lights, MAX_LIGHTS) != 0)
     {

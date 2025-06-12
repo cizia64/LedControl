@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <string.h>
+#include <time.h>
 
 #define NUM_OPTIONS 2
 #define MAX_NAME_LEN 50
@@ -38,7 +39,7 @@ const char *triggernames[] = {
 const char *effect_names[] = {
     "Linear", "Breathe", "Interval Breathe", "Static",
     "Blink 1", "Blink 2", "Blink 3", "Color Drift", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Battery Level", "CPU Speed", "Nothing", "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"};
+    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", "Battery Level", "CPU Speed", "CPU Temperature", "Nothing", "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"};
 
 int read_settings(const char *filename, LightSettings *lights, int max_lights)
 {
@@ -392,22 +393,27 @@ char *read_effect_description(const char *effect_name)
 
 int get_mainui_brightness()
 {
-    FILE *fp = popen("/usr/trimui/bin/shmvar ledvalue", "r");
-    if (!fp)
-        return 0;
+    static int cached_value = 60; // default value
+    static time_t last_read = 0;
 
-    char buffer[32];
-    if (!fgets(buffer, sizeof(buffer), fp))
+    time_t now = time(NULL);
+    if (now - last_read >= 5)
     {
-        pclose(fp);
-        return 0;
+        FILE *fp = popen("/usr/trimui/bin/shmvar ledvalue", "r");
+        if (fp)
+        {
+            char buffer[32];
+            if (fgets(buffer, sizeof(buffer), fp))
+            {
+                int ui_value = atoi(buffer);
+                cached_value = (ui_value * 60) / 10;
+            }
+            pclose(fp);
+        }
+        last_read = now;
     }
-    pclose(fp);
 
-    int ui_value = atoi(buffer);
-
-    // Cross multiplication towards 0–60
-    return (ui_value * 60) / 10;
+    return cached_value;
 }
 
 int main(int argc, char *argv[])
