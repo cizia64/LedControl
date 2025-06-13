@@ -740,12 +740,14 @@ void update_ambilight(const LightSettings *light)
 }
 
 float wastriggered = 0.0f;
+
 void update_light_settings(LightSettings *light, const char *dir)
 {
     char filepath[256];
     char filepath2[256];
     FILE *file;
-    FILE *file2;
+    FILE *file_effect_rgb_hex;
+    FILE *file_frame_hex;
     light->progress += mapSpeedToProgress(light->duration);
 
     if (light->progress > 1.0f)
@@ -757,48 +759,48 @@ void update_light_settings(LightSettings *light, const char *dir)
 
     chmodfile(filepath, 1);
     chmodfile(filepath2, 1);
-    file = fopen(filepath, "w");
-    file2 = fopen(filepath2, "w");
+    file_effect_rgb_hex = fopen(filepath, "w");
+    file_frame_hex = fopen(filepath2, "w");
 
-    if (file != NULL && file2 != NULL)
+    if (file_effect_rgb_hex != NULL && file_frame_hex != NULL)
     {
         SDL_Color tempcolor = HexIntToColor(light->color);
         int r, g, b;
         if (light->effect == 8) // Color drift
         {
             ColorWave(light->progress, &r, &g, &b);
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
+            fprintf(file_effect_rgb_hex, "%02X%02X%02X\n", r, g, b);
         }
 
         else if (light->effect == 9) // TwinkleEffect
         {
             TwinkleEffect(light->progress, tempcolor.r, tempcolor.g, tempcolor.b, &r, &g, &b);
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
+            fprintf(file_effect_rgb_hex, "%02X%02X%02X\n", r, g, b);
         }
         else if (light->effect == 10) // FireEffect
         {
             FireEffect(light->progress, &r, &g, &b);
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
+            fprintf(file_effect_rgb_hex, "%02X%02X%02X\n", r, g, b);
         }
         else if (light->effect == 11) // GlitterEffect
         {
             GlitterEffect(light->progress, tempcolor.r, tempcolor.g, tempcolor.b, &r, &g, &b);
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
+            fprintf(file_effect_rgb_hex, "%02X%02X%02X\n", r, g, b);
         }
         else if (light->effect == 12) // NeonGlowEffect
         {
             NeonGlowEffect(light->progress, tempcolor.r, tempcolor.g, tempcolor.b, &r, &g, &b);
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
+            fprintf(file_effect_rgb_hex, "%02X%02X%02X\n", r, g, b);
         }
         else if (light->effect == 13) // FireEffect
         {
             FireflyEffect(light->progress, tempcolor.r, tempcolor.g, tempcolor.b, &r, &g, &b);
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
+            fprintf(file_effect_rgb_hex, "%02X%02X%02X\n", r, g, b);
         }
         else if (light->effect == 14) // Aurora
         {
             AuroraEffect(light->progress, &r, &g, &b);
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
+            fprintf(file_effect_rgb_hex, "%02X%02X%02X\n", r, g, b);
         }
         else if (light->effect == 15) // reactive
         {
@@ -825,7 +827,7 @@ void update_light_settings(LightSettings *light, const char *dir)
                     light->current_b = light->color & 0xFF;
                     light->progress = 0.0f;
                     light->running = 1;
-                    fprintf(file, "%06X\n", light->color);
+                    fprintf(file_effect_rgb_hex, "%06X\n", light->color);
                 }
             }
             else
@@ -866,11 +868,11 @@ void update_light_settings(LightSettings *light, const char *dir)
                     {
                         light->running = 0;
                     }
-                    fprintf(file, "%06X\n", faded_color);
+                    fprintf(file_effect_rgb_hex, "%06X\n", faded_color);
                 }
                 else
                 {
-                    fprintf(file, "%06X\n", light->color2);
+                    fprintf(file_effect_rgb_hex, "%06X\n", light->color2);
                     light->running = 0;
                 }
             }
@@ -880,51 +882,51 @@ void update_light_settings(LightSettings *light, const char *dir)
         {
             BatteryLevelToColor(light, &r, &g, &b);
 
-            int LED_COUNT = 23;
-            for (int j = 0; j < LED_COUNT; j++)
-            {
-                light->colorarray[j] = (r << 16) | (g << 8) | b;
-                fprintf(file2, "%02X%02X%02X ", r, g, b);
-            }
+            // int LED_COUNT = 23;
+            // for (int j = 0; j < LED_COUNT; j++)
+            // {
+            //     light->colorarray[j] = (r << 16) | (g << 8) | b;
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            // }
 
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
+            fprintf(file_effect_rgb_hex, "%02X%02X%02X\n", r, g, b);
         }
 
         else if (light->effect == 17) // CPU Speed
         {
             CpuSpeedToColor(light, &r, &g, &b);
 
-            int LED_COUNT = 23;
-            for (int j = 0; j < LED_COUNT; j++)
-            {
-                light->colorarray[j] = (r << 16) | (g << 8) | b;
-                fprintf(file2, "%02X%02X%02X ", r, g, b);
-            }
+            // int LED_COUNT = 23;
+            // for (int j = 0; j < LED_COUNT; j++)
+            // {
+            //     light->colorarray[j] = (r << 16) | (g << 8) | b;
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            // }
 
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
+            fprintf(file_effect_rgb_hex, "%02X%02X%02X\n", r, g, b);
         }
 
         else if (light->effect == 18) // CPU Temperature
         {
             CpuTempToColor(light, &r, &g, &b);
 
-            int LED_COUNT = 23;
-            for (int j = 0; j < LED_COUNT; j++)
-            {
-                light->colorarray[j] = (r << 16) | (g << 8) | b;
-                fprintf(file2, "%02X%02X%02X ", r, g, b);
-            }
+            // int LED_COUNT = 23;
+            // for (int j = 0; j < LED_COUNT; j++)
+            // {
+            //     light->colorarray[j] = (r << 16) | (g << 8) | b;
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            // }
 
-            fprintf(file, "%02X%02X%02X\n", r, g, b);
+            fprintf(file_effect_rgb_hex, "%02X%02X%02X\n", r, g, b);
         }
 
         else if (light->effect == 19) // Ambilight
         {
             update_ambilight(light);
 
-            // No need to write to file/file2
-            fclose(file);
-            fclose(file2);
+            // No need to write to file/file_frame_hex
+            fclose(file_effect_rgb_hex);
+            fclose(file_frame_hex);
             chmodfile(filepath, 0);
             chmodfile(filepath2, 0);
             return;
@@ -933,8 +935,8 @@ void update_light_settings(LightSettings *light, const char *dir)
         else if (light->effect == 20) // Nothing
         {
             // Do nothing: leave it to another external process
-            fclose(file);
-            fclose(file2);
+            fclose(file_effect_rgb_hex);
+            fclose(file_frame_hex);
 
             // chmodfile(filepath, 0);
             // chmodfile(filepath2, 0);
@@ -942,95 +944,95 @@ void update_light_settings(LightSettings *light, const char *dir)
         }
         else if (light->effect == 21) // Rainbow Snake
         {
-            fprintf(file2, "000000 ");
+            fprintf(file_frame_hex, "000000 ");
             ColorWave(light->progress, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             ColorWave(light->progress + 0.1, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             ColorWave(light->progress + 0.2, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             ColorWave(light->progress + 0.3, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             ColorWave(light->progress + 0.4, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             //////////// mirror rotation / symetry  //////////
             ColorWave(light->progress + 0.3, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             ColorWave(light->progress + 0.2, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             ColorWave(light->progress + 0.1, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             ColorWave(light->progress, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             ColorWave(light->progress + 0.4, &r, &g, &b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
-            fprintf(file2, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             //////////// same rotation //////////
             //  ColorWave(light->progress, &r, &g, &b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             //     ColorWave(light->progress + 0.1, &r, &g, &b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             //     ColorWave(light->progress + 0.2, &r, &g, &b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             //     ColorWave(light->progress + 0.3, &r, &g, &b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             //     ColorWave(light->progress + 0.4, &r, &g, &b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             /////////// inverted position ///////////
 
             //     ColorWave(light->progress + 0.4, &r, &g, &b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             //     ColorWave(light->progress + 0.3, &r, &g, &b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             //     ColorWave(light->progress + 0.2, &r, &g, &b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             //     ColorWave(light->progress + 0.1, &r, &g, &b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
 
             //     ColorWave(light->progress, &r, &g, &b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
-            //     fprintf(file2, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
+            //     fprintf(file_frame_hex, "%02X%02X%02X ", r, g, b);
         }
-        else if (light->effect == 22)
+        else if (light->effect == 22) // Rotation
         {
             int LED_COUNT = 23;
             // static int current_i = 1; // Starts at 1, because 0 is reserved
@@ -1053,10 +1055,10 @@ void update_light_settings(LightSettings *light, const char *dir)
             // Display
             for (int j = 0; j < LED_COUNT; j++)
             {
-                fprintf(file2, "%06X ", light->colorarray[j]);
+                fprintf(file_frame_hex, "%06X ", light->colorarray[j]);
             }
         }
-        else if (light->effect == 23)
+        else if (light->effect == 23) // Rotation Mirror
         {
 
             int LED_COUNT = 23;
@@ -1091,11 +1093,11 @@ void update_light_settings(LightSettings *light, const char *dir)
             // Display
             for (int j = 0; j < LED_COUNT; j++)
             {
-                fprintf(file2, "%06X ", light->colorarray[j]);
+                fprintf(file_frame_hex, "%06X ", light->colorarray[j]);
             }
         }
 
-        else if (light->effect == 24)
+        else if (light->effect == 24) // Directions
         {
 
             int LED_COUNT = 23;
@@ -1141,17 +1143,17 @@ void update_light_settings(LightSettings *light, const char *dir)
 
             for (int j = 0; j < LED_COUNT; j++)
             {
-                fprintf(file2, "%06X ", light->colorarray[j]);
+                fprintf(file_frame_hex, "%06X ", light->colorarray[j]);
             }
         }
 
         else
         {
-            fprintf(file, "%06X\n", light->color);
+            fprintf(file_effect_rgb_hex, "%06X\n", light->color);
         }
 
-        fclose(file);
-        fclose(file2);
+        fclose(file_effect_rgb_hex);
+        fclose(file_frame_hex);
     }
 
     chmodfile(filepath, 0);
@@ -1182,7 +1184,11 @@ void update_light_settings(LightSettings *light, const char *dir)
     file = fopen(filepath, "w");
     if (file != NULL)
     {
-        fprintf(file, "%d\n", light->effect >= 8 ? light->effect >= 16 ? 0 : 4 : light->effect);
+        fprintf(file, "%d\n", light->effect >= 8 ? light->effect >= 18 ? 0 : 4 : light->effect);
+        // Led controller effect 0 to 7 -> send effect 0 to 7
+        // Led controller effect 8 to 18 -> send effect 4 = static
+        // Led controller effect > 18 -> send effect 0 = no effect
+
         fclose(file);
     }
     chmodfile(filepath, 0);

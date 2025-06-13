@@ -37,11 +37,10 @@ const char *triggernames[] = {
     "B", "A", "Y", "X", "L", "R", "SELECT", "START", "MENU", "ALL", "LR", "DPAD"};
 
 const char *effect_names[] = {
-    "Linear", "Breathe", "Interval Breathe", "Static",
-    "Blink 1", "Blink 2", "Blink 3", "Color Drift", "Twinkle",
-    "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive", 
-    "Battery Level", "CPU Speed", "CPU Temperature", "Ambilight", "Nothing",  // Effects from CrossMix
-    "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"}; // exclusive to "lr" light
+    "Linear", "Breathe", "Interval Breathe", "Static", "Blink 1", "Blink 2", "Blink 3", "Color Drift", // native effects from LED driver
+    "Twinkle", "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive",                         // effect logic managed by LED controller daemon
+    "Battery Level", "CPU Speed", "CPU Temperature", "Ambilight", "Nothing",                           // Effects from CrossMix
+    "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"};                                     // Effects requiring effect_rgb_hex_lr, exclusive to “lr” light.
 
 int read_settings(const char *filename, LightSettings *lights, int max_lights)
 {
