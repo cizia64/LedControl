@@ -521,75 +521,78 @@ int main(int argc, char *argv[])
     while (running)
     {
 
-        while (SDL_PollEvent(&event))
+        if (SDL_WaitEventTimeout(&event, 50))
         {
-            if (event.type == SDL_QUIT)
+            do
             {
-                running = false;
-            }
-            else if (event.type == SDL_KEYDOWN)
-            {
-                switch (event.key.keysym.sym)
+                if (event.type == SDL_QUIT)
                 {
-                case SDLK_DOWN:
-                    selected_setting = (selected_setting + 1) % 6;
-                    break;
-                case SDLK_UP:
-                    selected_setting = (selected_setting - 1 + 6) % 6;
-                    break;
-                case SDLK_TAB:
-                    selected_light = (selected_light - 1 + NUM_OPTIONS) % NUM_OPTIONS;
-                    break;
-                case SDLK_RIGHT:
-                case SDLK_LEFT:
-                    handle_light_input(&lights[selected_light], &event, selected_setting);
-                    break;
-                case SDLK_RETURN:
-                case SDLK_KP_ENTER:
-                    // SDL_Log("Selected: %s -> brightness: %d, effect: %d, color: 0x%06X, duration: %d",
-                    //         lights[selected_light].name,
-                    //         lights[selected_light].brightness,
-                    //         lights[selected_light].effect,
-                    //         lights[selected_light].color,
-                    //         lights[selected_light].duration);
-                    break;
+                    running = false;
                 }
-            }
-            else if (event.type == SDL_CONTROLLERBUTTONDOWN)
-            {
-                switch (event.cbutton.button)
+                else if (event.type == SDL_KEYDOWN)
                 {
-                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                    selected_setting = (selected_setting + 1) % 6;
-                    break;
-                case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                    selected_setting = (selected_setting - 1 + 6) % 6;
-                    break;
-                case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                    selected_light = (selected_light - 1 + NUM_OPTIONS) % NUM_OPTIONS;
-                    break;
-                case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-                    selected_light = (selected_light + 1) % NUM_OPTIONS;
-                    break;
-                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                    handle_light_input(&lights[selected_light], &event, selected_setting);
-                    break;
-                case SDL_CONTROLLER_BUTTON_B:
-                    // strcpy(last_button_pressed, "DPAD Down");
-                    // SDL_Log("Selected: %s -> brightness: %d, effect: %d, color: 0x%06X, duration: %d",
-                    //         lights[selected_light].name,
-                    //         lights[selected_light].brightness,
-                    //         lights[selected_light].effect,
-                    //         lights[selected_light].color,
-                    //         lights[selected_light].duration);
-                    break;
-                case SDL_CONTROLLER_BUTTON_A:
-                    SDL_Quit();
-                    break;
-                    // Add more cases for other buttons as needed
+                    switch (event.key.keysym.sym)
+                    {
+                    case SDLK_DOWN:
+                        selected_setting = (selected_setting + 1) % 6;
+                        break;
+                    case SDLK_UP:
+                        selected_setting = (selected_setting - 1 + 6) % 6;
+                        break;
+                    case SDLK_TAB:
+                        selected_light = (selected_light - 1 + NUM_OPTIONS) % NUM_OPTIONS;
+                        break;
+                    case SDLK_RIGHT:
+                    case SDLK_LEFT:
+                        handle_light_input(&lights[selected_light], &event, selected_setting);
+                        break;
+                    case SDLK_RETURN:
+                    case SDLK_KP_ENTER:
+                        // SDL_Log("Selected: %s -> brightness: %d, effect: %d, color: 0x%06X, duration: %d",
+                        //         lights[selected_light].name,
+                        //         lights[selected_light].brightness,
+                        //         lights[selected_light].effect,
+                        //         lights[selected_light].color,
+                        //         lights[selected_light].duration);
+                        break;
+                    }
                 }
-            }
+                else if (event.type == SDL_CONTROLLERBUTTONDOWN)
+                {
+                    switch (event.cbutton.button)
+                    {
+                    case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                        selected_setting = (selected_setting + 1) % 6;
+                        break;
+                    case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                        selected_setting = (selected_setting - 1 + 6) % 6;
+                        break;
+                    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                        selected_light = (selected_light - 1 + NUM_OPTIONS) % NUM_OPTIONS;
+                        break;
+                    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                        selected_light = (selected_light + 1) % NUM_OPTIONS;
+                        break;
+                    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                    case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                        handle_light_input(&lights[selected_light], &event, selected_setting);
+                        break;
+                    case SDL_CONTROLLER_BUTTON_B:
+                        // strcpy(last_button_pressed, "DPAD Down");
+                        // SDL_Log("Selected: %s -> brightness: %d, effect: %d, color: 0x%06X, duration: %d",
+                        //         lights[selected_light].name,
+                        //         lights[selected_light].brightness,
+                        //         lights[selected_light].effect,
+                        //         lights[selected_light].color,
+                        //         lights[selected_light].duration);
+                        break;
+                    case SDL_CONTROLLER_BUTTON_A:
+                        SDL_Quit();
+                        break;
+                        // Add more cases for other buttons as needed
+                    }
+                }
+            } while (SDL_PollEvent(&event));
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
