@@ -645,14 +645,14 @@ void CpuSpeedToColor(const LightSettings *light, int *r, int *g, int *b)
 
 void CpuTempToColor(const LightSettings *light, int *r, int *g, int *b)
 {
-    static int last_temp = 0;
+    static int last_temp = 60;
     static long last_read_time_ms = 0;
 
     struct timeval tv;
     gettimeofday(&tv, NULL);
     long now_ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 
-    if (now_ms - last_read_time_ms >= 1000) // toutes les 1s
+    if (now_ms - last_read_time_ms >= 1000) // Read every 1s
     {
         FILE *f = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
         if (f)
@@ -660,62 +660,29 @@ void CpuTempToColor(const LightSettings *light, int *r, int *g, int *b)
             int temp_raw = 0;
             if (fscanf(f, "%d", &temp_raw) == 1)
             {
-                last_temp = temp_raw / 1000; // convertir en °C
+                last_temp = temp_raw / 1000; // convert to °C
             }
             fclose(f);
         }
         last_read_time_ms = now_ms;
     }
 
-    // Mapping température → couleur
-    if (last_temp <= 40)
+    float pct = (last_temp - 60) / 20.0f; // map 60–80°C → 0.0–1.0
+    if (pct < 0.0f)
+        pct = 0.0f;
+    if (pct > 1.0f)
+        pct = 1.0f;
+
+    if (pct < 0.5f)
     {
-        *r = 0;
-        *g = 255;
-        *b = 0;
-    } // Green
-    else if (last_temp <= 45)
-    {
-        *r = 127;
-        *g = 255;
-        *b = 0;
-    } // Chartreuse
-    else if (last_temp <= 50)
-    {
-        *r = 255;
-        *g = 255;
-        *b = 0;
-    } // Yellow
-    else if (last_temp <= 55)
-    {
-        *r = 255;
-        *g = 165;
-        *b = 0;
-    } // Orange
-    else if (last_temp <= 60)
-    {
-        *r = 255;
-        *g = 140;
-        *b = 0;
-    } // Dark Orange
-    else if (last_temp <= 65)
-    {
-        *r = 255;
-        *g = 69;
-        *b = 0;
-    } // Red Orange
-    else if (last_temp <= 70)
-    {
-        *r = 255;
-        *g = 20;
-        *b = 0;
-    } // Vermilion
+        // Green → Orange
+        CycleBetweenTwoColors(pct / 0.5f, 0, 255, 0, 255, 165, 0, r, g, b);
+    }
     else
     {
-        *r = 255;
-        *g = 0;
-        *b = 0;
-    } // Red
+        // Orange → Red
+        CycleBetweenTwoColors((pct - 0.5f) / 0.5f, 255, 165, 0, 255, 0, 0, r, g, b);
+    }
 }
 
 void update_ambilight(const LightSettings *light)
@@ -1184,7 +1151,7 @@ void update_light_settings(LightSettings *light, const char *dir)
     file = fopen(filepath, "w");
     if (file != NULL)
     {
-        fprintf(file, "%d\n", light->effect >= 8 ? light->effect >= 18 ? 0 : 4 : light->effect);
+        fprintf(file, "%d\n", light->effect >= 8 ? light->effect >= 19 ? 0 : 4 : light->effect);
         // Led controller effect 0 to 7 -> send effect 0 to 7
         // Led controller effect 8 to 18 -> send effect 4 = static
         // Led controller effect > 18 -> send effect 0 = no effect

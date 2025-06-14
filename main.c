@@ -37,10 +37,10 @@ const char *triggernames[] = {
     "B", "A", "Y", "X", "L", "R", "SELECT", "START", "MENU", "ALL", "LR", "DPAD"};
 
 const char *effect_names[] = {
-    "Linear", "Breathe", "Interval Breathe", "Static", "Blink 1", "Blink 2", "Blink 3", "Color Drift", // native effects from LED driver
-    "Twinkle", "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive",                         // effect logic managed by LED controller daemon
-    "Battery Level", "CPU Speed", "CPU Temperature", "Ambilight", "Nothing",                           // Effects from CrossMix
-    "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"};                                     // Effects requiring effect_rgb_hex_lr, exclusive to “lr” light.
+    "Linear", "Breathe", "Interval Breathe", "Static", "Blink 1", "Blink 2", "Blink 3", "Color Drift", // 1-8  native effects from LED driver
+    "Twinkle", "Fire", "Glitter", "NeonGlow", "Firefly", "Aurora", "Reactive",                         // 9-15 effect logic managed by LED controller daemon
+    "Battery Level", "CPU Speed", "CPU Temperature", "Ambilight", "Nothing",                           // 16-20 Effects from CrossMix
+    "Rainbow Snake", "Rotation", "Rotation Mirror", "Directions"};                                     // 21-24 Effects requiring effect_rgb_hex_lr, exclusive to “lr” light.
 
 int read_settings(const char *filename, LightSettings *lights, int max_lights)
 {
@@ -419,11 +419,6 @@ int get_mainui_brightness()
 
 int main(int argc, char *argv[])
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
-    {
-        SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
-        return 1;
-    }
 
     if (TTF_Init() == -1)
     {
@@ -900,6 +895,7 @@ int main(int argc, char *argv[])
         // =========== End Displays the effect description ===========
 
         SDL_RenderPresent(renderer);
+        usleep(50000);
     }
     TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
